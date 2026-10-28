@@ -82,7 +82,7 @@ void DocumentInfo::detectFormat() {
         mFormat = "jpg";
         mDocumentType = DocumentType::STATIC;
     } else if(mimeName == "image/png") {
-        if(QImageReader::supportedImageFormats().contains("apng") && detectAPNG()) {
+        if(settings->supportedFormats().contains("apng") && detectAPNG()) {
             mFormat = "apng";
             mDocumentType = DocumentType::ANIMATED;
         } else {

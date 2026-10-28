@@ -283,7 +283,9 @@ void ThumbnailView::populate(int newCount) {
     // wait for layout before updating
     qApp->processEvents();
     this->setUpdatesEnabled(true);
-    loadVisibleThumbnails();
+    // defer thumbnail decoding: at this point the main image is just about to be
+    // displayed, so don't compete with it (matters on startup / directory change)
+    loadVisibleThumbnailsDelayed();
 }
 
 void ThumbnailView::addItem() {

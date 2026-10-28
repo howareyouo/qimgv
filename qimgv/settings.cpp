@@ -310,7 +310,9 @@ void Settings::setMpvBinary(QString path) {
 }
 //------------------------------------------------------------------------------
 QList<QByteArray> Settings::supportedFormats() {
-    auto formats = QImageReader::supportedImageFormats();
+    // enumerating image format plugins is expensive, so cache the result
+    static const QList<QByteArray> readerFormats = QImageReader::supportedImageFormats();
+    auto formats = readerFormats;
     formats << "jfif";
     if(videoPlayback())
         formats << mVideoFormatsMap.values();
@@ -343,8 +345,9 @@ QString Settings::supportedFormatsRegex() {
 //------------------------------------------------------------------------------
 // returns list of mime types
 QStringList Settings::supportedMimeTypes() {
+    static const QList<QByteArray> readerMimeTypes = QImageReader::supportedMimeTypes();
     QStringList filters;
-    QList<QByteArray> mimeTypes = QImageReader::supportedMimeTypes();
+    QList<QByteArray> mimeTypes = readerMimeTypes;
     if(videoPlayback())
         mimeTypes << mVideoFormatsMap.keys();
     for(int i = 0; i < mimeTypes.count(); i++) {

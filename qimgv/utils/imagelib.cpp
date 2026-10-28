@@ -14,7 +14,9 @@ QImage *ImageLib::rotatedRaw(const QImage *src, int grad) {
     QImage *img = new QImage();
     QTransform transform;
     transform.rotate(grad);
-    *img = src->transformed(transform, Qt::SmoothTransformation);
+    // rotation by a multiple of 90 degrees maps pixels 1:1, interpolation is a
+    // waste of time there (and gives the exact same result)
+    *img = src->transformed(transform, (grad % 90) ? Qt::SmoothTransformation : Qt::FastTransformation);
     return img;
 }
 //------------------------------------------------------------------------------
@@ -67,8 +69,8 @@ std::unique_ptr<const QImage> ImageLib::exifRotated(std::unique_ptr<const QImage
         src.reset(ImageLib::flippedVRaw(src.get()));
     } break;
     case 3: {
-        src.reset(ImageLib::flippedHRaw(src.get()));
-        src.reset(ImageLib::flippedVRaw(src.get()));
+        // flipH + flipV is a 180 degree rotation, do it in a single pass
+        src.reset(new QImage(src->mirrored(true, true)));
     } break;
     case 4: {
         src.reset(ImageLib::rotatedRaw(src.get(), 90));
@@ -99,8 +101,8 @@ std::unique_ptr<QImage> ImageLib::exifRotated(std::unique_ptr<QImage> src, int o
         src.reset(ImageLib::flippedVRaw(src.get()));
     } break;
     case 3: {
-        src.reset(ImageLib::flippedHRaw(src.get()));
-        src.reset(ImageLib::flippedVRaw(src.get()));
+        // flipH + flipV is a 180 degree rotation, do it in a single pass
+        src.reset(new QImage(src->mirrored(true, true)));
     } break;
     case 4: {
         src.reset(ImageLib::rotatedRaw(src.get(), 90));

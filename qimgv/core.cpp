@@ -331,7 +331,7 @@ void Core::onModelLoaded() {
 void Core::onDirectoryViewFileActivated(QString filePath) {
     // we aren`t using async load so it won't flicker with empty view
     mw->enableDocumentView();
-    loadPath(filePath);
+    loadPathImpl(filePath, false);
 }
 
 void Core::rotateLeft() {
@@ -1209,6 +1209,10 @@ void Core::reset() {
 }
 
 bool Core::loadPath(QString path) {
+    return loadPathImpl(path, true);
+}
+
+bool Core::loadPathImpl(QString path, bool async) {
     if(path.isEmpty())
         return false;
     if(path.startsWith("file://", Qt::CaseInsensitive))
@@ -1247,7 +1251,9 @@ bool Core::loadPath(QString path) {
             }
         }
         mw->enableDocumentView();
-        return loadFileIndex(index, false, settings->usePreloader());
+        // async by default, so that the window can be shown without waiting for
+        // the image to be decoded (decoding happens in a worker thread)
+        return loadFileIndex(index, async, settings->usePreloader());
     } else {
         mw->enableFolderView();
         return true;
@@ -1511,7 +1517,13 @@ void Core::guiSetImage(std::shared_ptr<Image> img) {
         mw->showVideo(video->filePath());
     }
     img->isEdited() ? mw->showSaveOverlay() : mw->hideSaveOverlay();
-    mw->setExifInfo(img->getExifTags());
+    // exif parsing can take a while on big files and it is only needed by the
+    // info overlay, so do it after the image is on screen
+    const QString exifPath = state.currentFilePath;
+    QTimer::singleShot(0, this, [this, exifPath, img]() {
+        if(exifPath == state.currentFilePath)
+            mw->setExifInfo(img->getExifTags());
+    });
 }
 
 void Core::updateInfoString() {
