@@ -234,6 +234,10 @@ if ! ( set +e
     cd "$EXT_DIR"
     [[ -d qt-heif-image-plugin ]] || git clone --depth 1 https://github.com/jakar/qt-heif-image-plugin.git
     cd qt-heif-image-plugin &&
+    # The plugin relies on the compiler's default search paths, which cover the
+    # msys2 prefix but not our source-built libheif; inject it explicitly.
+    export CPATH="$(cygpath -m "$EXT_DIR/libheif-prefix/include")${CPATH:+:$CPATH}"
+    export LIBRARY_PATH="$(cygpath -m "$EXT_DIR/libheif-prefix/lib")${LIBRARY_PATH:+:$LIBRARY_PATH}"
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH="$PREFIX" &&
