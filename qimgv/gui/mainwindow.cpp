@@ -281,8 +281,9 @@ void MW::onZoomChanged(qreal scale) {
     }
     // defer so the zoom operation finishes with the current geometry first,
     // otherwise the viewport center it uses becomes stale
-    QTimer::singleShot(0, this, [this, imageSz, zoomedIn]() {
-        growWindowForZoom(imageSz, zoomedIn);
+    QTimer::singleShot(0, this, [this, imageSz, zoomedOut]() {
+        // allowShrink only while zooming out; zooming in never shrinks the window
+        growWindowForZoom(imageSz, zoomedOut);
     });
 }
 
@@ -726,6 +727,13 @@ void MW::triggerFullScreen() {
     }
 }
 
+void MW::toggleFramelessWindow() {
+    bool mode = !settings->framelessWindow();
+    settings->setFramelessWindow(mode);
+    applyFramelessWindow(mode);
+    showMessage(mode ? "Frameless window: ON" : "Frameless window: OFF");
+}
+
 void MW::showFullScreen() {
     //do not save immediately on application start
     if(!isHidden())
@@ -935,7 +943,7 @@ void MW::onInfoUpdated() {
         if(info.edited)
             windowTitle.prepend("* ");
 
-        infoBarFullscreen->setInfo(posString, info.fileName + (info.edited ? "  *" : ""), resString + "  " + sizeString);
+        infoBarFullscreen->setInfo(posString, info.fileName + (info.edited ? "  *" : ""), resString + "  " + sizeString + " " + states);
         infoBarWindowed->setInfo(posString, info.fileName + (info.edited ? "  *" : ""), resString + "  " + sizeString + " " + states);
     }
     setWindowTitle(windowTitle);
@@ -1073,6 +1081,9 @@ void MW::applyFramelessWindow(bool mode) {
             QWidget::show();
     }
     updateWindowDragEnabled();
+    // re-evaluate overlays: in frameless mode the image info floats over the
+    // top-left corner instead of the (removed) native title bar
+    adaptToWindowState();
 }
 
 void MW::updateWindowDragEnabled() {
@@ -1248,12 +1259,21 @@ void MW::adaptToWindowState() {
             controlsOverlay->hide();
     } else { //------------------------------------------------------ window ---
         applyWindowedBackground();
-        infoBarFullscreen->hide();
 
-        if(showInfoBarWindowed)
-            infoBarWindowed->show();
-        else
+        if(windowFlags().testFlag(Qt::FramelessWindowHint)) {
+            // no native title bar to show the image info, so float it over the
+            // top-left corner of the window instead
+            // (note: not isFramelessActive(), which is false while maximized)
             infoBarWindowed->hide();
+            infoBarFullscreen->showWhenReady();
+        } else {
+            infoBarFullscreen->hide();
+
+            if(showInfoBarWindowed)
+                infoBarWindowed->show();
+            else
+                infoBarWindowed->hide();
+        }
 
         controlsOverlay->hide();
     }
