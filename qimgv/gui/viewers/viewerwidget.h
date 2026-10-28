@@ -22,6 +22,10 @@ public:
     float currentScale();
     QSize sourceSize();
     QSize originalSize();
+    // whether the last zoom was anchored at the cursor position
+    bool lastZoomAtCursor();
+    // center the viewport on the image
+    void centerImage();
 
     void setInteractionEnabled(bool mode);
     bool interactionEnabled();

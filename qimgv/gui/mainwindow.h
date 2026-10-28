@@ -160,7 +160,7 @@ private:
     // keeping the image aspect ratio, until width or height reaches
     // the screen edge; the window never goes below the image's original size
     void onZoomChanged(qreal scale);
-    void growWindowForZoom(QSize imageSz, bool allowShrink);
+    void growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom);
     qreal lastZoomScale;
     bool zoomResizeGuard, imageLoading;
     void setInteractionEnabled(bool mode);

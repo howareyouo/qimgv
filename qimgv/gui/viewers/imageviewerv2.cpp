@@ -758,6 +758,8 @@ void ImageViewerV2::mouseMoveWindow(QMouseEvent *event) {
 //        FIT_FREE mode does not persist when changing images.
 inline
 void ImageViewerV2::mouseMoveZoom(QMouseEvent *event) {
+    // anchored at the RMB press point (a cursor anchor), set on mouse press
+    lastZoomAtCursorFlag = true;
     float stepMultiplier = 0.003f; // this one feels ok
     int currentPos = event->pos().y();
     int moveDistance = mouseMoveStartPos.y() - currentPos;
@@ -1123,10 +1125,13 @@ void ImageViewerV2::zoomInCursor() {
 }
 
 void ImageViewerV2::doZoomIn(bool atCursor) {
-    if(atCursor && underMouse())
+    if(atCursor && underMouse()) {
         setZoomAnchor(mapFromGlobal(cursor().pos()));
-    else
+        lastZoomAtCursorFlag = true;
+    } else {
         setZoomAnchor(viewport()->rect().center());
+        lastZoomAtCursorFlag = false;
+    }
     float newScale = currentScale() * (1.0f + zoomStep);
     if(useFixedZoomLevels && zoomLevels.count()) {
         if(currentScale() < zoomLevels.first()) {
@@ -1164,10 +1169,13 @@ void ImageViewerV2::zoomOutCursor() {
 }
 
 void ImageViewerV2::doZoomOut(bool atCursor) {
-    if(atCursor && underMouse())
+    if(atCursor && underMouse()) {
         setZoomAnchor(mapFromGlobal(cursor().pos()));
-    else
+        lastZoomAtCursorFlag = true;
+    } else {
         setZoomAnchor(viewport()->rect().center());
+        lastZoomAtCursorFlag = false;
+    }
     float newScale = currentScale() * (1.0f - zoomStep);
     if(useFixedZoomLevels && zoomLevels.count()) {
         if(currentScale() > zoomLevels.last()) {
@@ -1299,6 +1307,20 @@ void ImageViewerV2::doZoom(float newScale) {
     pixmapItem.setTransformationMode(selectTransformationMode());
     swapToOriginalPixmap();
     emit scaleChanged(newScale);
+}
+
+bool ImageViewerV2::lastZoomAtCursor() {
+    return lastZoomAtCursorFlag;
+}
+
+// centers the viewport on the image; used after center-anchored zooming,
+// when the window resize has shifted the view away from the center
+void ImageViewerV2::centerImage() {
+    if(!pixmap)
+        return;
+    centerOn(pixmapItem.sceneBoundingRect().center());
+    centerIfNecessary();
+    snapToEdges();
 }
 
 ImageFitMode ImageViewerV2::fitMode() const {

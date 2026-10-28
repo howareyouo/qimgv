@@ -85,6 +85,18 @@ QSize ViewerWidget::originalSize() {
         return QSize(0,0);
 }
 
+bool ViewerWidget::lastZoomAtCursor() {
+    if(currentWidget == IMAGEVIEWER)
+        return imageViewer->lastZoomAtCursor();
+    else
+        return false;
+}
+
+void ViewerWidget::centerImage() {
+    if(imageViewer && currentWidget == IMAGEVIEWER)
+        imageViewer->centerImage();
+}
+
 void ViewerWidget::enableImageViewer() {
     if(currentWidget != IMAGEVIEWER) {
         connect(imageViewer.get(), &ImageViewerV2::durationChanged, videoControls, &VideoControlsProxyWrapper::setPlaybackDuration);

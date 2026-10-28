@@ -55,6 +55,10 @@ public:
     QSize scaledSizeR() const;
     // image display size at 1:1 (logical px)
     QSize originalSizeR() const;
+    // whether the last zoom was anchored at the cursor position
+    bool lastZoomAtCursor();
+    // center the viewport on the image
+    void centerImage();
 
     void pauseResume();
     void enableDrags();
@@ -172,6 +176,8 @@ private:
     ViewLockMode mViewLock;
 
     QPair<QPointF, QPoint> zoomAnchor; // [pixmap coords, viewport coords]
+    // whether the last zoom was anchored at the cursor (false = viewport center)
+    bool lastZoomAtCursorFlag = false;
 
     QElapsedTimer lastTouchpadScroll;
 

@@ -259,9 +259,6 @@ void MW::preShowResize(QSize sz) {
     qApp->processEvents(); // not needed anymore with patched qt?
 }
 
-// grows / shrinks the window together with the image while zooming,
-// keeping the image aspect ratio, until width or height reaches the screen
-// edge; zooming out never shrinks the window below the image's original size
 void MW::onZoomChanged(qreal scale) {
     if(!isVisible())
         return;
@@ -281,13 +278,19 @@ void MW::onZoomChanged(qreal scale) {
     }
     // defer so the zoom operation finishes with the current geometry first,
     // otherwise the viewport center it uses becomes stale
-    QTimer::singleShot(0, this, [this, imageSz, zoomedOut]() {
+    bool atCursor = viewerWidget->lastZoomAtCursor();
+    QTimer::singleShot(0, this, [this, imageSz, zoomedOut, atCursor]() {
         // allowShrink only while zooming out; zooming in never shrinks the window
-        growWindowForZoom(imageSz, zoomedOut);
+        growWindowForZoom(imageSz, zoomedOut, atCursor);
     });
 }
 
-void MW::growWindowForZoom(QSize imageSz, bool allowShrink) {
+// grows / shrinks the window together with the image while zooming,
+// keeping the image aspect ratio, until width or height reaches the screen
+// edge; zooming out never shrinks the window below the image's original size
+// centerZoom: keep the window center fixed and re-center the image afterwards
+// (key zoom); otherwise keep the top-left corner fixed (cursor-anchored zoom)
+void MW::growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom) {
     if(imageSz.isEmpty() || zoomResizeGuard || imageLoading || !isVisible())
         return;
     if(windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
@@ -324,14 +327,31 @@ void MW::growWindowForZoom(QSize imageSz, bool allowShrink) {
     int frameLeft = geometry().x() - frameGeometry().x();
     int frameTop  = geometry().y() - frameGeometry().y();
     QRect newFrame(frameGeometry().topLeft(), target + frameExtra);
-    if(newFrame.right() > availableGeom.right())
-        newFrame.moveRight(availableGeom.right());
-    if(newFrame.bottom() > availableGeom.bottom())
-        newFrame.moveBottom(availableGeom.bottom());
+    if(centerZoom) {
+        // keep the window center in place, clamped to the screen
+        newFrame.moveCenter(frameGeometry().center());
+        if(newFrame.left()   < availableGeom.left())
+            newFrame.moveLeft(availableGeom.left());
+        if(newFrame.top()    < availableGeom.top())
+            newFrame.moveTop(availableGeom.top());
+        if(newFrame.right()  > availableGeom.right())
+            newFrame.moveRight(availableGeom.right());
+        if(newFrame.bottom() > availableGeom.bottom())
+            newFrame.moveBottom(availableGeom.bottom());
+    } else {
+        if(newFrame.right() > availableGeom.right())
+            newFrame.moveRight(availableGeom.right());
+        if(newFrame.bottom() > availableGeom.bottom())
+            newFrame.moveBottom(availableGeom.bottom());
+    }
 
     zoomResizeGuard = true;
     setGeometry(QRect(newFrame.topLeft() + QPoint(frameLeft, frameTop), target));
     zoomResizeGuard = false;
+    // center-anchored zoom expects the image center to stay in the middle
+    // of the viewport; the window resize has shifted it, so re-center
+    if(centerZoom)
+        viewerWidget->centerImage();
 }
 
 void MW::showImage(std::unique_ptr<QPixmap> pixmap) {
