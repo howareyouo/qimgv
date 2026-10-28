@@ -8,7 +8,6 @@
 #include <QFileDialog>
 #include <QMimeData>
 #include <QImageWriter>
-#include <QPointer>
 #include <QWindow>
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
@@ -62,12 +61,13 @@ enum ActiveSidePanel {
     SIDEPANEL_NONE
 };
 
+class FramelessWindowHelper;
+
 class MW : public FloatingWidgetContainer
 {
     Q_OBJECT
 public:
     explicit MW(QWidget *parent = nullptr);
-    ~MW() override;
     bool isCropPanelActive();
     void onScalingFinished(std::unique_ptr<QPixmap>scaled);
     void showImage(std::unique_ptr<QPixmap> pixmap);
@@ -122,30 +122,9 @@ private:
     void saveCurrentDisplay();
     void setupUi();
 
-    // frameless window: no native title bar / border, so moving and resizing
-    // has to be handled manually (see eventFilter())
-    enum FramelessDragMode {
-        FRAMELESS_DRAG_NONE,
-        FRAMELESS_DRAG_MOVE,
-        FRAMELESS_DRAG_RESIZE
-    };
-    FramelessDragMode framelessDragMode;
-    Qt::Edges framelessResizeEdges;
-    QPoint framelessPressPos;
-    QRect framelessStartGeometry;
-    bool isFramelessActive() const;
-    Qt::Edges framelessEdgesAt(const QPoint &windowPos) const;
+    // frameless window: moving / resizing is handled by FramelessWindowHelper
+    FramelessWindowHelper *framelessHelper;
     void applyFramelessWindow(bool mode);
-    // resize cursor feedback for the resize margins
-    QPointer<QWidget> framelessCursorWidget;
-    Qt::Edges framelessCursorEdges;
-    void updateFramelessCursor(QWidget *widget, Qt::Edges edges);
-    void resetFramelessCursor();
-    // widgets have to report hovering for the margins to react before a click
-    void enableFramelessMouseTracking();
-    // lets the image viewer move the window by dragging the image area
-    // (when the frameless window is active and the image is not zoomed in)
-    void updateWindowDragEnabled();
 
     void applyWindowedBackground();
     void applyFullscreenBackground();
@@ -178,7 +157,6 @@ private slots:
     void showScriptSettings();
 
 protected:
-    bool eventFilter(QObject *obj, QEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event);
     bool event(QEvent *event);
     void paintEvent(QPaintEvent *event);

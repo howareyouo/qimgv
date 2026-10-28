@@ -6,6 +6,7 @@ target_sources(qimgv PRIVATE
     flowlayout.cpp
     idirectoryview.cpp
     mainwindow.cpp
+    framelesswindow.cpp
 
     customwidgets/actionbutton.cpp
     customwidgets/clickablelabel.cpp

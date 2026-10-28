@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "framelesswindow.h"
 
 #include <QScreen>
 
@@ -17,7 +18,6 @@ MW::MW(QWidget *parent)
       floatingMessage(nullptr),
       cropPanel(nullptr),
       cropOverlay(nullptr),
-      framelessDragMode(FRAMELESS_DRAG_NONE),
       lastZoomScale(-1.0),
       zoomResizeGuard(false),
       imageLoading(false)
@@ -50,17 +50,16 @@ MW::MW(QWidget *parent)
     connect(this, &MW::fullscreenStateChanged, this, &MW::adaptToWindowState);
     // frameless window has no native title bar, catch mouse events on all
     // widgets to implement moving / resizing by hand
-    qApp->installEventFilter(this);
+    framelessHelper = new FramelessWindowHelper(this, [this](bool enabled) {
+        if(viewerWidget)
+            viewerWidget->setWindowDragEnabled(enabled);
+    }, this);
     readSettings();
     currentDisplay = settings->lastDisplay();
     maximized = settings->maximizedWindow();
     if(settings->framelessWindow())
         applyFramelessWindow(true);
     restoreWindowGeometry();
-}
-
-MW::~MW() {
-    qApp->removeEventFilter(this);
 }
 
 /*                                                             |--[ImageViewer]
@@ -543,7 +542,7 @@ bool MW::event(QEvent *event) {
     // this filter out out events while the window is still being set up
     if(event->type() == QEvent::WindowStateChange && this->isVisible() && !this->isFullScreen()) {
         maximized = isMaximized();
-        updateWindowDragEnabled();
+        framelessHelper->updateDragEnabled(maximized);
     }
     if(event->type() == QEvent::Move || event->type() == QEvent::Resize)
         windowGeometryChangeTimer.start();
@@ -1035,191 +1034,10 @@ void MW::readSettings() {
 }
 
 // ------------------------------------------------------- frameless window ---
-// FramelessWindowHint removes the native title bar and border together with
-// everything they provide, so moving and resizing is done by hand:
-// alt + left mouse button drags the window, dragging its edges resizes it.
-
-static const int FRAMELESS_RESIZE_MARGIN = 6;
-
-static QPoint mouseGlobalPos(const QMouseEvent *event) {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    return event->globalPosition().toPoint();
-#else
-    return event->globalPos();
-#endif
-}
-
-bool MW::isFramelessActive() const {
-    return windowFlags().testFlag(Qt::FramelessWindowHint)
-           && !isFullScreen()
-           && !maximized;
-}
-
-Qt::Edges MW::framelessEdgesAt(const QPoint &pos) const {
-    Qt::Edges edges;
-    if(pos.x() < FRAMELESS_RESIZE_MARGIN)
-        edges |= Qt::LeftEdge;
-    else if(pos.x() > width() - FRAMELESS_RESIZE_MARGIN)
-        edges |= Qt::RightEdge;
-    if(pos.y() < FRAMELESS_RESIZE_MARGIN)
-        edges |= Qt::TopEdge;
-    else if(pos.y() > height() - FRAMELESS_RESIZE_MARGIN)
-        edges |= Qt::BottomEdge;
-    return edges;
-}
 
 void MW::applyFramelessWindow(bool mode) {
-    if(windowFlags().testFlag(Qt::FramelessWindowHint) == mode)
-        return;
-    bool wasVisible = isVisible();
-    bool wasFullScreen = this->isFullScreen();
-    setWindowFlag(Qt::FramelessWindowHint, mode);
-    // setWindowFlag() hides the window
-    if(wasVisible) {
-        if(wasFullScreen)
-            QWidget::showFullScreen();
-        else if(maximized)
-            QWidget::showMaximized();
-        else
-            QWidget::show();
-    }
-    updateWindowDragEnabled();
-    // re-evaluate overlays: in frameless mode the image info floats over the
-    // top-left corner instead of the (removed) native title bar
-    adaptToWindowState();
-}
-
-void MW::updateWindowDragEnabled() {
-    const bool frameless = isFramelessActive();
-    if(viewerWidget)
-        viewerWidget->setWindowDragEnabled(frameless);
-    if(!frameless) {
-        resetFramelessCursor();
-        return;
-    }
-    // child widgets only report hovering with mouse tracking enabled, and the
-    // cursor is what tells the user that the edges can be dragged
-    enableFramelessMouseTracking();
-}
-
-static Qt::CursorShape framelessCursorForEdges(Qt::Edges edges) {
-    const bool top = edges & Qt::TopEdge;
-    const bool bottom = edges & Qt::BottomEdge;
-    const bool left = edges & Qt::LeftEdge;
-    const bool horizontal = left || (edges & Qt::RightEdge);
-    if((top && left) || (bottom && (edges & Qt::RightEdge)))
-        return Qt::SizeFDiagCursor;
-    if((top && (edges & Qt::RightEdge)) || (bottom && left))
-        return Qt::SizeBDiagCursor;
-    if(horizontal)
-        return Qt::SizeHorCursor;
-    return Qt::SizeVerCursor;
-}
-
-// The cursor has to be set on the widget under the pointer: most children set
-// their own cursor (e.g. the image viewer), which would hide it otherwise
-void MW::updateFramelessCursor(QWidget *widget, Qt::Edges edges) {
-    if(framelessCursorWidget.data() == widget && framelessCursorEdges == edges)
-        return;
-    resetFramelessCursor();
-    if(!widget || !edges)
-        return;
-    widget->setCursor(framelessCursorForEdges(edges));
-    framelessCursorWidget = widget;
-    framelessCursorEdges = edges;
-}
-
-void MW::resetFramelessCursor() {
-    if(framelessCursorWidget)
-        framelessCursorWidget->unsetCursor();
-    framelessCursorWidget = nullptr;
-    framelessCursorEdges = Qt::Edges();
-}
-
-void MW::enableFramelessMouseTracking() {
-    const QList<QWidget*> widgets = findChildren<QWidget*>();
-    for(QWidget *widget : widgets) {
-        if(!widget->hasMouseTracking())
-            widget->setMouseTracking(true);
-    }
-}
-
-bool MW::eventFilter(QObject *obj, QEvent *event) {
-    const QEvent::Type type = event->type();
-    if(type == QEvent::Leave) {
-        // do not leave the resize cursor behind when the pointer leaves
-        if(framelessCursorWidget && framelessCursorWidget.data() == qobject_cast<QWidget*>(obj))
-            resetFramelessCursor();
-        return false;
-    }
-    if(type != QEvent::MouseButtonPress
-       && type != QEvent::MouseMove
-       && type != QEvent::MouseButtonRelease)
-        return false;
-    if(!isFramelessActive())
-        return false;
-    QWidget *widget = qobject_cast<QWidget*>(obj);
-    if(!widget || widget->window() != this)
-        return false;
-
-    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
-
-    if(type == QEvent::MouseButtonPress) {
-        if(mouseEvent->button() != Qt::LeftButton)
-            return false;
-        if(mouseEvent->modifiers() == Qt::AltModifier) {
-            framelessDragMode = FRAMELESS_DRAG_MOVE;
-        } else {
-            Qt::Edges edges = framelessEdgesAt(mapFromGlobal(mouseGlobalPos(mouseEvent)));
-            if(!edges)
-                return false;
-            framelessDragMode = FRAMELESS_DRAG_RESIZE;
-            framelessResizeEdges = edges;
-            updateFramelessCursor(widget, edges);
-        }
-        framelessPressPos = mouseGlobalPos(mouseEvent);
-        framelessStartGeometry = geometry();
-        // do not pass the click to the widget under the cursor
-        return true;
-    }
-
-    if(type == QEvent::MouseMove && !mouseEvent->buttons()) {
-        // hovering: show which edge would be dragged
-        updateFramelessCursor(widget, framelessEdgesAt(mapFromGlobal(mouseGlobalPos(mouseEvent))));
-        return false;
-    }
-
-    if(framelessDragMode == FRAMELESS_DRAG_NONE)
-        return false;
-
-    if(type == QEvent::MouseButtonRelease) {
-        framelessDragMode = FRAMELESS_DRAG_NONE;
-        return true;
-    }
-
-    if(!(mouseEvent->buttons() & Qt::LeftButton)) {
-        framelessDragMode = FRAMELESS_DRAG_NONE;
-        return false;
-    }
-
-    QPoint delta = mouseGlobalPos(mouseEvent) - framelessPressPos;
-    if(framelessDragMode == FRAMELESS_DRAG_MOVE) {
-        move(framelessStartGeometry.topLeft() + delta);
-    } else {
-        QRect newGeometry = framelessStartGeometry;
-        const int minWidth = qMax(minimumWidth(), 100);
-        const int minHeight = qMax(minimumHeight(), 100);
-        if(framelessResizeEdges & Qt::LeftEdge)
-            newGeometry.setLeft(qMin(newGeometry.left() + delta.x(), newGeometry.right() - minWidth));
-        else if(framelessResizeEdges & Qt::RightEdge)
-            newGeometry.setRight(qMax(newGeometry.right() + delta.x(), newGeometry.left() + minWidth));
-        if(framelessResizeEdges & Qt::TopEdge)
-            newGeometry.setTop(qMin(newGeometry.top() + delta.y(), newGeometry.bottom() - minHeight));
-        else if(framelessResizeEdges & Qt::BottomEdge)
-            newGeometry.setBottom(qMax(newGeometry.bottom() + delta.y(), newGeometry.top() + minHeight));
-        setGeometry(newGeometry);
-    }
-    return true;
+    if(framelessHelper->applyFrameless(mode, maximized))
+        adaptToWindowState();
 }
 
 // todo: remove/rename?
@@ -1266,7 +1084,7 @@ void MW::adaptToWindowState() {
         if(windowFlags().testFlag(Qt::FramelessWindowHint)) {
             // no native title bar to show the image info, so float it over the
             // top-left corner of the window instead
-            // (note: not isFramelessActive(), which is false while maximized)
+            // (note: the helper's framelessActive() is false while maximized)
             infoBarWindowed->hide();
             infoBarFullscreen->showWhenReady();
         } else {
@@ -1283,7 +1101,7 @@ void MW::adaptToWindowState() {
     folderView->onFullscreenModeChanged(isFullScreen());
     docWidget->onFullscreenModeChanged(isFullScreen());
     viewerWidget->onFullscreenModeChanged(isFullScreen());
-    updateWindowDragEnabled();
+    framelessHelper->updateDragEnabled(maximized);
 }
 
 void MW::paintEvent(QPaintEvent *event) {
