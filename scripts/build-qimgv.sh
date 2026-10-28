@@ -358,9 +358,15 @@ if [[ -n "$leaked_dlls" ]]; then
 fi
 
 # Guard: HEIF/AVIF/EXIF support must actually be present, not silently dropped
-for required_dll in "libde265*.dll" "libdav1d*.dll" "libheif*.dll" "libavif*.dll" "libexiv2*.dll" "imageformats/libqheif.dll" "imageformats/libqavif5.dll"; do
+for required_dll in "libde265*.dll" "libdav1d*.dll" "libheif*.dll" "libavif*.dll" "libexiv2*.dll"; do
     if [[ -z "$(find "$PACKAGE_DIR" -maxdepth 2 -type f -name "$required_dll" -print -quit)" ]]; then
         echo "ERROR: required DLL missing from package: $required_dll" >&2
+        exit 1
+    fi
+done
+for required_plugin in imageformats/libqheif.dll imageformats/libqavif5.dll; do
+    if [[ ! -f "$PACKAGE_DIR/$required_plugin" ]]; then
+        echo "ERROR: required plugin missing from package: $required_plugin" >&2
         exit 1
     fi
 done
