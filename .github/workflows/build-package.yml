@@ -28,6 +28,16 @@ jobs:
           #ref: dev
           fetch-depth: 0
 
+      # _external/ holds the source-built exiv2/libavif/libheif prefixes and the
+      # image format plugins; the .built-stamp mechanism inside build-qimgv.sh
+      # decides what is reusable. Keyed on the script hash so version/option
+      # changes start a fresh cache; restore-keys keeps comment-only edits cheap.
+      - uses: actions/cache@v4
+        with:
+          path: _external
+          key: qimgv-external-${{ hashFiles('scripts/build-qimgv.sh') }}
+          restore-keys: qimgv-external-
+
       - id: build
         name: CI-Build
         run: |
