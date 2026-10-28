@@ -11,7 +11,7 @@ if [[ "${MSYSTEM:-}" != "UCRT64" ]]; then
     exit 1
 fi
 
-PREFIX="$(cygpath -m /ucrt64)"
+PREFIX="/ucrt64"
 SCRIPTS_DIR="$(dirname "$(readlink -f "$0")")"
 SRC_DIR="$(dirname "$SCRIPTS_DIR")"
 BUILD_DIR="$SRC_DIR/build"
