@@ -27,6 +27,7 @@ mkdir -p "$BUILD_DIR"
 
 # ------------------------------------------------------------------------------
 echo "INSTALLING UCRT64 BUILD DEPS"
+# extra-cmake-modules provides ECM, required by the jxl and avif image plugins
 pacman -S --noconfirm --needed \
     git p7zip mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
     mingw-w64-ucrt-x86_64-gcc \
@@ -38,6 +39,7 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-qt5-translations \
     mingw-w64-ucrt-x86_64-qt5-imageformats \
     mingw-w64-ucrt-x86_64-exiv2 \
+    mingw-w64-ucrt-x86_64-extra-cmake-modules \
     mingw-w64-ucrt-x86_64-opencv \
     mingw-w64-ucrt-x86_64-libjxl \
     mingw-w64-ucrt-x86_64-libavif \
