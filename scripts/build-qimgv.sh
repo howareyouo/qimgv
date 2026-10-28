@@ -47,7 +47,7 @@ pacman -S --noconfirm --needed \
 
 # Native cmake + pkg-config need Windows-style paths; a few .pc files hardcode
 # the POSIX prefix which cmake would otherwise report as a non-existent path.
-sed -i "s|=/ucrt64|=$PREFIX|g" "$PREFIX"/lib/pkgconfig/*.pc "$PREFIX"/share/pkgconfig/*.pc 2>/dev/null || true
+sed -i "s|/ucrt64/|$PREFIX/|g" "$PREFIX"/lib/pkgconfig/*.pc "$PREFIX"/share/pkgconfig/*.pc 2>/dev/null || true
 
 QMAKE="$(command -v qmake-qt5 || command -v qmake || true)"
 if [[ -z "$QMAKE" ]]; then
