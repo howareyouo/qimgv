@@ -71,6 +71,19 @@ jobs:
            name: ${{ needs.build.outputs.build_file_name }}
            skip-decompress: true
 
+       # every run uploads a new versioned zip to the same latest-dev release;
+       # without this the old assets accumulate forever
+       - name: Clear outdated release assets
+         env:
+           GH_TOKEN: ${{ github.token }}
+         run: |
+           rid="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/latest-dev" --jq '.id' 2>/dev/null || true)"
+           if [ -n "$rid" ]; then
+             for id in $(gh api "repos/$GITHUB_REPOSITORY/releases/$rid/assets" --paginate --jq '.[].id'); do
+               gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$id"
+             done
+           fi
+
        - uses: softprops/action-gh-release@v3
          #if: startsWith(github.ref, 'refs/tags/')
          with:
