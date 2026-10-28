@@ -157,7 +157,7 @@ build_from_git libheif https://github.com/strukturag/libheif.git v1.19.5 \
 # Windows expects ';' separators and Windows-style paths; its compiled-in
 # defaults still cover /ucrt64.
 PKG_CONFIG_PATH=""
-for p in exiv2 avif heif; do
+for p in exiv2 libavif libheif; do
     PKG_CONFIG_PATH+="$(cygpath -m "$EXT_DIR/$p-prefix")/lib/pkgconfig;"
 done
 export PKG_CONFIG_PATH+="$PREFIX/lib/pkgconfig;$PREFIX/share/pkgconfig"
@@ -213,7 +213,7 @@ if ! ( set +e
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
         "${CCACHE_ARGS[@]}" \
-        -DCMAKE_PREFIX_PATH="$(cygpath -m "$EXT_DIR/avif-prefix");$PREFIX" &&
+        -DCMAKE_PREFIX_PATH="$(cygpath -m "$EXT_DIR/libavif-prefix");$PREFIX" &&
     ninja -C build
 ); then
     echo "WARNING: qt-avif-image-plugin failed; AVIF support will be missing" >&2
@@ -342,7 +342,7 @@ collect_ucrt_dlls() {
 }
 
 mapfile -t bins < <(find "$PACKAGE_DIR" -maxdepth 2 -type f \( -name '*.exe' -o -name '*.dll' \))
-export PATH="$EXT_DIR/exiv2-prefix/bin:$EXT_DIR/avif-prefix/bin:$EXT_DIR/heif-prefix/bin:$PATH"
+export PATH="$EXT_DIR/exiv2-prefix/bin:$EXT_DIR/libavif-prefix/bin:$EXT_DIR/libheif-prefix/bin:$PATH"
 collect_ucrt_dlls "${bins[@]}"
 
 dll_count=$(find "$PACKAGE_DIR" -maxdepth 1 -name '*.dll' | wc -l)
@@ -350,6 +350,25 @@ if (( dll_count < 20 )); then
     echo "ERROR: only $dll_count runtime DLLs collected, packaging is incomplete" >&2
     exit 1
 fi
+
+# Guard: the decoder-only rebuilds must keep encoder/network DLLs out of the
+# package even when msys2's full-featured libavif/libheif got installed as a
+# dependency of something else (e.g. gdk-pixbuf2 pulls libavif).
+leaked_dlls="$(find "$PACKAGE_DIR" -maxdepth 2 -type f -iname '*.dll' \
+    | grep -iE '(libaom|librav1e|libsvtav1|libx265|libx264|libopenh264|libkvazaar|libcryptopp|libcurl|libssh|libssl|libcrypto|libnghttp|libpsl|libidn)' || true)"
+if [[ -n "$leaked_dlls" ]]; then
+    echo "ERROR: unwanted encoder/network DLLs leaked into the package:" >&2
+    echo "$leaked_dlls" >&2
+    exit 1
+fi
+
+# Guard: HEIF/AVIF/EXIF support must actually be present, not silently dropped
+for required_dll in "libde265*.dll" "libdav1d*.dll" "libheif*.dll" "libavif*.dll" "libexiv2*.dll" "imageformats/libqheif.dll" "imageformats/libqavif5.dll"; do
+    if [[ -z "$(find "$PACKAGE_DIR" -maxdepth 2 -type f -name "$required_dll" -print -quit)" ]]; then
+        echo "ERROR: required DLL missing from package: $required_dll" >&2
+        exit 1
+    fi
+done
 
 cd "$SRC_DIR"
 echo "PACKAGING DONE ($dll_count runtime dlls)"
