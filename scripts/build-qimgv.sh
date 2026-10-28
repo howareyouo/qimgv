@@ -11,7 +11,7 @@ if [[ "${MSYSTEM:-}" != "UCRT64" ]]; then
     exit 1
 fi
 
-PREFIX="/ucrt64"
+PREFIX="$(cygpath -m /ucrt64)"
 SCRIPTS_DIR="$(dirname "$(readlink -f "$0")")"
 SRC_DIR="$(dirname "$SCRIPTS_DIR")"
 BUILD_DIR="$SRC_DIR/build"
@@ -28,7 +28,7 @@ mkdir -p "$BUILD_DIR"
 # ------------------------------------------------------------------------------
 echo "INSTALLING UCRT64 BUILD DEPS"
 pacman -S --noconfirm --needed \
-    git p7zip cmake ninja pkgconf \
+    git p7zip ninja mingw-w64-ucrt-x86_64-cmake-bootstrap \
     mingw-w64-ucrt-x86_64-gcc \
     mingw-w64-ucrt-x86_64-make \
     mingw-w64-ucrt-x86_64-pkgconf \
@@ -51,17 +51,11 @@ if [[ -z "$QMAKE" ]]; then
     exit 1
 fi
 
-# MSYS pkg-config reports POSIX paths, the mingw one reports "D:/..." drive
-# paths which the MSYS cmake rejects as relative include directories.
-export PKG_CONFIG_PATH="/ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-PKG_CONFIG_EXE="/usr/bin/pkg-config"
-
 # ------------------------------------------------------------------------------
 echo "BUILDING"
 cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$PREFIX" \
-    -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG_EXE" \
     -DOPENCV_SUPPORT=ON \
     -DVIDEO_SUPPORT=ON \
     -DCMAKE_CXX_FLAGS="$CFL" \
@@ -80,7 +74,6 @@ if ! ( set +e
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
         -DCMAKE_PREFIX_PATH="$PREFIX" \
-        -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG_EXE" &&
     ninja -C build
 ); then
     echo "WARNING: qt-jpegxl-image-plugin failed; JXL support will be missing" >&2
@@ -94,7 +87,6 @@ if ! ( set +e
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
         -DCMAKE_PREFIX_PATH="$PREFIX" \
-        -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG_EXE" &&
     ninja -C build
 ); then
     echo "WARNING: qt-avif-image-plugin failed; AVIF support will be missing" >&2
@@ -118,7 +110,6 @@ if ! ( set +e
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_PREFIX_PATH="$PREFIX" \
-        -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG_EXE" &&
     ninja -C build
 ); then
     echo "WARNING: qt-heif-image-plugin failed; HEIF support will be missing" >&2
