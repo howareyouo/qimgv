@@ -225,6 +225,7 @@ public:
     void setFolderEndAction(FolderEndAction mode);
 
     const ColorScheme& colorScheme();
+    const QPalette& systemPalette();
     void setColorScheme(ColorScheme scheme);
     void setColorTid(int tid);
 
@@ -306,9 +307,11 @@ private:
     QSettings *settingsConf, *stateConf, *themeConf;
     QDir *mTmpDir, *mThumbCacheDir, *mConfDir;
     ColorScheme mColorScheme;
+    QPalette mSystemPalette;
     void loadTheme();
     void saveTheme();
     void createColorVariants();
+    void applyAppPalette();
 
     void setupCache();
 

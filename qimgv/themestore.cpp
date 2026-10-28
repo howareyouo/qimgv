@@ -1,8 +1,10 @@
 #include "themestore.h"
+#include "settings.h"
 
 ColorScheme ThemeStore::colorScheme(ColorSchemes name) {
     BaseColorScheme base = {-1};
-    QPalette p;
+    // use the pristine system palette; the app palette may be overridden by a custom theme
+    QPalette p = Settings::getInstance()->systemPalette();
     switch(name) {
         case COLORS_SYSTEM:
         case COLORS_CUSTOMIZED:    

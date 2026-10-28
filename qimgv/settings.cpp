@@ -16,6 +16,8 @@ Settings::Settings(QObject *parent) : QObject(parent) {
     stateConf = new QSettings(mConfDir->absolutePath() + "/savedState.ini", QSettings::IniFormat);
     themeConf = new QSettings(mConfDir->absolutePath() + "/theme.ini", QSettings::IniFormat);
 #endif
+    // system palette, kept around so we can switch back to it
+    mSystemPalette = qApp->palette();
 }
 //------------------------------------------------------------------------------
 Settings::~Settings() {
@@ -86,7 +88,7 @@ void Settings::loadStylesheet() {
         // --- color scheme ---------------------------------------------
         auto colors = settings->colorScheme();
         // tint color for system windows
-        QPalette p;
+        QPalette p = qApp->palette();
         QColor sys_text = p.text().color();
         QColor sys_window = p.window().color();
         QColor sys_window_tinted, sys_window_tinted_lc, sys_window_tinted_lc2, sys_window_tinted_hc, sys_window_tinted_hc2;
@@ -264,8 +266,41 @@ const ColorScheme& Settings::colorScheme() {
     return mColorScheme;
 }
 //------------------------------------------------------------------------------
+const QPalette& Settings::systemPalette() {
+    return mSystemPalette;
+}
+//------------------------------------------------------------------------------
+// apply the color scheme to the application palette, so that widgets not covered
+// by the stylesheet (settings dialog, other std dialogs) follow the selected theme
+void Settings::applyAppPalette() {
+    QPalette pal = mSystemPalette;
+    if(mColorScheme.tid != COLORS_SYSTEM && mColorScheme.tid != COLORS_CUSTOMIZED) {
+        const ColorScheme &c = mColorScheme;
+        pal.setColor(QPalette::Window,           c.widget);
+        pal.setColor(QPalette::WindowText,       c.text);
+        pal.setColor(QPalette::Base,             c.widget);
+        pal.setColor(QPalette::AlternateBase,    c.folderview);
+        pal.setColor(QPalette::Text,             c.text);
+        pal.setColor(QPalette::Button,           c.widget);
+        pal.setColor(QPalette::ButtonText,       c.text);
+        pal.setColor(QPalette::Highlight,        c.accent);
+        pal.setColor(QPalette::HighlightedText,  c.background_fullscreen);
+        pal.setColor(QPalette::ToolTipBase,      c.widget);
+        pal.setColor(QPalette::ToolTipText,      c.text);
+        pal.setColor(QPalette::Link,             c.accent);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+        pal.setColor(QPalette::PlaceholderText,  c.text_lc2);
+#endif
+        pal.setColor(QPalette::Disabled, QPalette::WindowText, c.text_lc2);
+        pal.setColor(QPalette::Disabled, QPalette::Text,       c.text_lc2);
+        pal.setColor(QPalette::Disabled, QPalette::ButtonText, c.text_lc2);
+    }
+    qApp->setPalette(pal);
+}
+//------------------------------------------------------------------------------
 void Settings::setColorScheme(ColorScheme scheme) {
     mColorScheme = scheme;
+    applyAppPalette();
     loadStylesheet();
 }
 //------------------------------------------------------------------------------
