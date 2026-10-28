@@ -59,7 +59,7 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DOPENCV_SUPPORT=ON \
     -DVIDEO_SUPPORT=ON \
     -DCMAKE_CXX_FLAGS="$CFL" \
-    -DCMAKE_EXE_LINKER_FLAGS="$LDF"
+    -DCMAKE_EXE_LINKER_FLAGS="$LDFL"
 ninja -C "$BUILD_DIR"
 
 # ------------------------------------------------------------------------------
