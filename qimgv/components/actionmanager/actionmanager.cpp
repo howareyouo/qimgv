@@ -12,91 +12,10 @@ ActionManager::~ActionManager() {
 ActionManager *ActionManager::getInstance() {
     if(!actionManager) {
         actionManager = new ActionManager();
-        initDefaults();
         initShortcuts();
     }
     return actionManager;
 }
-//------------------------------------------------------------------------------
-void ActionManager::initDefaults() {
-    actionManager->defaults.insert("Right", "nextImage");
-    actionManager->defaults.insert("Left", "prevImage");
-    actionManager->defaults.insert("XButton2", "nextImage");
-    actionManager->defaults.insert("XButton1", "prevImage");
-    actionManager->defaults.insert("WheelDown", "nextImage");
-    actionManager->defaults.insert("WheelUp", "prevImage");
-    actionManager->defaults.insert("F", "toggleFullscreen");
-    actionManager->defaults.insert("F11", "toggleFullscreen");
-    actionManager->defaults.insert("LMB_DoubleClick", "toggleFullscreen");
-    actionManager->defaults.insert("MiddleButton", "exit");
-    actionManager->defaults.insert("Space", "toggleFitMode");
-    actionManager->defaults.insert("1", "fitWindow");
-    actionManager->defaults.insert("2", "fitWidth");
-    actionManager->defaults.insert("3", "fitNormal");
-    actionManager->defaults.insert("4", "fitWindowStretch");
-    actionManager->defaults.insert("R", "resize");
-    actionManager->defaults.insert("H", "flipH");
-    actionManager->defaults.insert("V", "flipV");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+R", "rotateRight");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+L", "rotateLeft");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+WheelUp", "zoomInCursor");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+WheelDown", "zoomOutCursor");
-    actionManager->defaults.insert("=", "zoomIn"); // [=+] key on the number row
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+=", "zoomIn");
-    actionManager->defaults.insert("+", "zoomIn");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "++", "zoomIn");
-    actionManager->defaults.insert("-", "zoomOut");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+-", "zoomOut");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Down", "zoomOut");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Up", "zoomIn");
-    actionManager->defaults.insert("Up", "scrollUp");
-    actionManager->defaults.insert("Down", "scrollDown");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+O", "open");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+S", "save");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+" + InputMap::keyNameShift() + "+S", "saveAs");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+W", "setWallpaper");
-    actionManager->defaults.insert("X", "crop");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+P", "print");
-    actionManager->defaults.insert(InputMap::keyNameAlt() + "+X", "exit");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Q", "exit");
-    actionManager->defaults.insert("Esc", "closeFullScreenOrExit");
-    actionManager->defaults.insert("Del", "moveToTrash");
-    actionManager->defaults.insert(InputMap::keyNameShift() + "+Del", "removeFile");
-    actionManager->defaults.insert("C", "copyFile");
-    actionManager->defaults.insert("M", "moveFile");
-    actionManager->defaults.insert("Home", "jumpToFirst");
-    actionManager->defaults.insert("End", "jumpToLast");
-    actionManager->defaults.insert(",", "frameStepBack");
-    actionManager->defaults.insert(".", "frameStep");
-    actionManager->defaults.insert("Enter", "folderView");
-    actionManager->defaults.insert("Backspace", "folderView");
-    actionManager->defaults.insert("F5", "reloadImage");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+C", "copyFileClipboard");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+" + InputMap::keyNameShift() + "+C", "copyPathClipboard");
-    actionManager->defaults.insert("F2", "renameFile");
-    actionManager->defaults.insert("RMB", "contextMenu");
-    actionManager->defaults.insert("Menu", "contextMenu");
-    actionManager->defaults.insert("I", "toggleImageInfo");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+`", "toggleShuffle");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+D", "showInDirectory");
-    actionManager->defaults.insert("`", "toggleSlideshow");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Z", "discardEdits");
-    actionManager->defaults.insert(InputMap::keyNameShift() + "+Right", "nextDirectory");
-    actionManager->defaults.insert(InputMap::keyNameShift() + "+Left", "prevDirectory");
-    actionManager->defaults.insert(InputMap::keyNameShift() + "+F", "toggleFullscreenInfoBar");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+V", "pasteFile");
-
-#ifdef __APPLE__
-    actionManager->defaults.insert(InputMap::keyNameAlt() + "+Up", "zoomIn");
-    actionManager->defaults.insert(InputMap::keyNameAlt() + "+Down", "zoomOut");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Comma", "openSettings");
-#else
-    actionManager->defaults.insert("P", "openSettings");
-#endif
-
-    //actionManager->defaults.insert("Backspace", "goUp"); // todo: shortcut scopes?
-}
-
 //------------------------------------------------------------------------------
 void ActionManager::initShortcuts() {
     actionManager->readShortcuts();
@@ -117,7 +36,7 @@ void ActionManager::removeShortcut(const QString &keys) {
 }
 //------------------------------------------------------------------------------
 QStringList ActionManager::actionList() {
-    return appActions->getList();
+    return ActionTable::names();
 }
 //------------------------------------------------------------------------------
 const QMap<QString, QString> &ActionManager::allShortcuts() {
@@ -149,18 +68,17 @@ QString ActionManager::keyForNativeScancode(quint32 scanCode) {
 }
 //------------------------------------------------------------------------------
 void ActionManager::resetDefaults() {
-    actionManager->shortcuts = actionManager->defaults;
+    actionManager->shortcuts = ActionTable::defaultShortcuts();
 }
 //------------------------------------------------------------------------------
 void ActionManager::resetDefaults(QString action) {
     actionManager->removeAllShortcuts(action);
-    QMapIterator<QString, QString> i(defaults);
-    while(i.hasNext()) {
-        i.next();
-        if(i.value() == action) {
-            shortcuts.insert(i.key(), i.value());
-            qDebug() << "[ActionManager] new action " << i.value() << " - assigning as [" << i.key() << "]";
-        }
+    const ActionSpec *spec = ActionTable::find(action);
+    if(!spec)
+        return;
+    for(const QString &keys : spec->defaultShortcuts) {
+        shortcuts.insert(keys, spec->name);
+        qDebug() << "[ActionManager] new action " << spec->name << " - assigning as [" << keys << "]";
     }
 }
 //------------------------------------------------------------------------------
@@ -186,16 +104,16 @@ void ActionManager::adjustFromVersion(QVersionNumber lastVer) {
         }
         shortcuts = swapped;
     }
-    // add new default actions
-    QMapIterator<QString, QString> i(defaults);
-    while(i.hasNext()) {
-        i.next();
-        if(appActions->getMap().value(i.value()) > lastVer) {
-            if(!shortcuts.contains(i.key())) {
-                shortcuts.insert(i.key(), i.value());
-                qDebug() << "[ActionManager] new action " << i.value() << " - assigning as [" << i.key() << "]";
-            } else if(i.value() != actionForShortcut(i.key())) {
-                qDebug() << "[ActionManager] new action " << i.value() << " - shortcut [" << i.key() << "] already assigned to another action " << actionForShortcut(i.key());
+    // add default shortcuts of actions introduced after the config was written
+    for(const ActionSpec &spec : ActionTable::all()) {
+        if(spec.introduced <= lastVer)
+            continue;
+        for(const QString &keys : spec.defaultShortcuts) {
+            if(!shortcuts.contains(keys)) {
+                shortcuts.insert(keys, spec.name);
+                qDebug() << "[ActionManager] new action " << spec.name << " - assigning as [" << keys << "]";
+            } else if(spec.name != actionForShortcut(keys)) {
+                qDebug() << "[ActionManager] new action " << spec.name << " - shortcut [" << keys << "] already assigned to another action " << actionForShortcut(keys);
             }
         }
     }
@@ -219,17 +137,60 @@ const QString ActionManager::shortcutForAction(QString action) {
 const QList<QString> ActionManager::shortcutsForAction(QString action) {
     return shortcuts.keys(action);
 }
-
+//------------------------------------------------------------------------------
+void ActionManager::registerHandler(const QString &actionName, std::function<void()> handler) {
+    if(!handler) {
+        qWarning() << "[ActionManager] ignoring empty handler for action:" << actionName;
+        return;
+    }
+    if(handlers.contains(actionName))
+        qWarning() << "[ActionManager] action bound twice, keeping the last handler:" << actionName;
+    handlers.insert(actionName, std::move(handler));
+}
+//------------------------------------------------------------------------------
+QStringList ActionManager::actionsWithoutHandler() const {
+    QStringList list;
+    for(const ActionSpec &spec : ActionTable::all()) {
+        if(!handlers.contains(spec.name))
+            list.append(spec.name);
+    }
+    return list;
+}
+//------------------------------------------------------------------------------
+QStringList ActionManager::handlersWithoutAction() const {
+    QStringList list;
+    for(auto it = handlers.constBegin(); it != handlers.constEnd(); ++it) {
+        if(!ActionTable::contains(it.key()))
+            list.append(it.key());
+    }
+    list.sort();
+    return list;
+}
+//------------------------------------------------------------------------------
+QStringList ActionManager::bindingProblems() const {
+    QStringList problems;
+    for(const QString &name : actionsWithoutHandler())
+        problems.append("action \"" + name + "\" has no handler");
+    for(const QString &name : handlersWithoutAction())
+        problems.append("handler \"" + name + "\" is not a known action");
+    for(const QString &conflict : ActionTable::conflictingDefaultShortcuts())
+        problems.append("default shortcut conflict: " + conflict);
+    return problems;
+}
 //------------------------------------------------------------------------------
 bool ActionManager::invokeAction(const QString &actionName) {
     ActionType type = validateAction(actionName);
-    if(type == ActionType::ACTION_NORMAL) {
-        QMetaObject::invokeMethod(this, actionName.toLatin1().constData(), Qt::DirectConnection);
+    if(type == ActionType::ACTION_SCRIPT) {
+        emit runScript(actionName.mid(2)); // drop the "s:" prefix
         return true;
-    } else if(type == ActionType::ACTION_SCRIPT) {
-        QString scriptName = actionName;
-        scriptName.remove(0, 2); // remove the "s:" prefix
-        emit runScript(scriptName);
+    }
+    if(type == ActionType::ACTION_NORMAL) {
+        auto it = handlers.constFind(actionName);
+        if(it == handlers.constEnd()) {
+            qWarning() << "[ActionManager] action has no handler:" << actionName;
+            return true;
+        }
+        (*it)();
         return true;
     }
     return false;
@@ -253,7 +214,7 @@ void ActionManager::validateShortcuts() {
 //------------------------------------------------------------------------------
 inline
 ActionType ActionManager::validateAction(const QString &actionName) {
-    if(appActions->getMap().contains(actionName))
+    if(ActionTable::contains(actionName))
         return ActionType::ACTION_NORMAL;
     if(actionName.startsWith("s:")) {
         QString scriptName = actionName;

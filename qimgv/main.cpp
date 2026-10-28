@@ -7,7 +7,6 @@
 #include "settings.h"
 #include "components/actionmanager/actionmanager.h"
 #include "utils/inputmap.h"
-#include "utils/actions.h"
 #include "utils/cmdoptionsrunner.h"
 #include "sharedresources.h"
 #include "proxystyle.h"
@@ -104,9 +103,7 @@ int main(int argc, char *argv[]) {
     qRegisterMetaTypeStreamOperators<Script>("Script");
 #endif
 
-    // globals
     inputMap = InputMap::getInstance();
-    appActions = Actions::getInstance();
     settings = Settings::getInstance();
     scriptManager = ScriptManager::getInstance();
     actionManager = ActionManager::getInstance();

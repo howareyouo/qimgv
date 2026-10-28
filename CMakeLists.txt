@@ -74,4 +74,5 @@ endif()
 
 ##############################################################
 
+include(CTest)
 add_subdirectory(qimgv)

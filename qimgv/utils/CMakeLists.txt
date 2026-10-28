@@ -1,7 +1,7 @@
 ## SOURCES FOR QIMGV UTILITY CLASSES
 
 target_sources(qimgv PRIVATE
-    actions.cpp
+    actiontable.cpp
     cmdoptionsrunner.cpp
     imagefactory.cpp
     imagelib.cpp

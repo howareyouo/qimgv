@@ -7,7 +7,7 @@ ShortcutCreatorDialog::ShortcutCreatorDialog(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowTitle("Add shortcut");
-    actionList = appActions->getList();
+    actionList = ActionTable::names();
     scriptList = scriptManager->scriptNames();
 
     ui->actionsComboBox->addItems(actionList);

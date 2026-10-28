@@ -4,10 +4,14 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QHash>
 #include <QMap>
 #include <QDebug>
 #include <QStringList>
-#include "utils/actions.h"
+
+#include <functional>
+
+#include "utils/actiontable.h"
 #include "shortcutbuilder.h"
 #include "components/scriptmanager/scriptmanager.h"
 #include "settings.h"
@@ -38,14 +42,28 @@ public:
     QString keyForNativeScancode(quint32 scanCode);
     void adjustFromVersion(QVersionNumber lastVer);
     void saveShortcuts();
+
+    /*
+     * Binds an action name to the code that runs it. Names come from
+     * ActionTable, so a typo here shows up in bindingProblems() instead of
+     * silently doing nothing the first time the user presses the key.
+     */
+    void registerHandler(const QString &actionName, std::function<void()> handler);
+    // ActionTable entries with no registered handler
+    QStringList actionsWithoutHandler() const;
+    // registered handlers whose name is not an ActionTable entry
+    QStringList handlersWithoutAction() const;
+    // everything that is inconsistent, one human readable line per problem
+    QStringList bindingProblems() const;
+
 public slots:
     bool invokeAction(const QString &actionName);
+
 private:
     explicit ActionManager(QObject *parent = nullptr);
-    QMap<QString, QString> defaults, shortcuts; // <shortcut, action>
+    QMap<QString, QString> shortcuts; // <shortcut, action>
+    QHash<QString, std::function<void()>> handlers;
 
-    static void initDefaults();
-    static void initActions();
     static void initShortcuts();
     QString modifierKeys(QEvent *event);
     bool invokeActionForShortcut(const QString &action);
@@ -54,71 +72,7 @@ private:
     ActionType validateAction(const QString &actionName);
 
 signals:
-    void open();
-    void save();
-    void saveAs();
-    void openSettings();
-    void crop();
-    void setWallpaper();
-    void nextImage();
-    void prevImage();
-    void fitWindow();
-    void fitWidth();
-    void fitNormal();
-    void fitWindowStretch();
-    void flipH();
-    void flipV();
-    void toggleFitMode();
-    void toggleFullscreen();
-    void scrollUp();
-    void scrollDown();
-    void scrollLeft();
-    void scrollRight();
-    void zoomIn();
-    void zoomOut();
-    void zoomInCursor();
-    void zoomOutCursor();
-    void resize();
-    void rotateLeft();
-    void rotateRight();
-    void exit();
-    void removeFile();
-    void copyFile();
-    void moveFile();
-    void closeFullScreenOrExit();
-    void jumpToFirst();
-    void jumpToLast();
-    void folderView();
-    void documentView();
     void runScript(const QString&);
-    void pauseVideo();
-    void frameStep();
-    void frameStepBack();
-    void toggleFolderView();
-    void moveToTrash();
-    void reloadImage();
-    void copyFileClipboard();
-    void copyPathClipboard();
-    void renameFile();
-    void contextMenu();
-    void toggleTransparencyGrid();
-    void sortByName();
-    void sortByTime();
-    void sortBySize();
-    void toggleImageInfo();
-    void toggleShuffle();
-    void toggleScalingFilter();
-    void showInDirectory();
-    void toggleSlideshow();
-    void discardEdits();
-    void goUp();
-    void nextDirectory();
-    void prevDirectory();
-    void lockZoom();
-    void lockView();
-    void print();
-    void toggleFullscreenInfoBar();
-    void pasteFile();
 };
 
 extern ActionManager *actionManager;
