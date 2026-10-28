@@ -11,11 +11,6 @@ ADD_DEFINITIONS(-DQIMGV_PLAYER_MPV_LIBRARY)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 
-if(NOT WIN32)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(Mpv REQUIRED IMPORTED_TARGET mpv)
-endif()
-
 include(GNUInstallDirs)
 
 add_library(player_mpv MODULE
@@ -26,10 +21,18 @@ add_library(player_mpv MODULE
 
 target_compile_features(player_mpv PRIVATE cxx_std_11)
 
-if(WIN32)
+# MPV_DIR is used by the Windows packaging script with a prebuilt mpv layout,
+# every other setup (including MSYS2 UCRT64) resolves mpv through pkg-config.
+if(WIN32 AND MPV_DIR)
+    target_include_directories(player_mpv PRIVATE
+        ${MPV_DIR}/include)
+    target_link_directories(player_mpv PRIVATE
+        ${MPV_DIR}/lib/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x86_64,i686>)
     target_link_libraries(player_mpv PRIVATE
         Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets Mpv)
 else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(Mpv REQUIRED IMPORTED_TARGET mpv)
     target_link_libraries(player_mpv PRIVATE
         Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Widgets PkgConfig::Mpv)
 endif()
@@ -43,13 +46,6 @@ set_target_properties(player_mpv PROPERTIES
     PREFIX "")
 
 target_include_directories(player_mpv PRIVATE src)
-
-if(WIN32)
-    target_include_directories(player_mpv PRIVATE
-        ${MPV_DIR}/include)
-    target_link_directories(player_mpv PRIVATE
-        ${MPV_DIR}/lib/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x86_64,i686>)
-endif()
 
 if(WIN32)
     install(TARGETS player_mpv LIBRARY DESTINATION "${CMAKE_INSTALL_BINDIR}/plugins")
