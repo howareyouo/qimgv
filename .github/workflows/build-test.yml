@@ -28,6 +28,7 @@ jobs:
             qt6-base-dev \
             qt6-svg-dev \
             qt6-l10n-tools \
+            qt6-tools-dev \
             qt6-tools-dev-tools \
             libgl1-mesa-dev
 
@@ -57,6 +58,7 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-qt5-base
             mingw-w64-ucrt-x86_64-qt5-svg
+            mingw-w64-ucrt-x86_64-qt5-tools
 
       - uses: actions/checkout@v4
 
