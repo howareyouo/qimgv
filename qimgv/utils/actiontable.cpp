@@ -191,7 +191,6 @@ const QList<ActionSpec> &buildTable() {
             InputMap::keyNameCtrl() + "+D",
         }},
         {"goUp", QVersionNumber(0,9,2), {
-            "Backspace",
         }},
         {"discardEdits", QVersionNumber(0,9,2), {
             InputMap::keyNameCtrl() + "+Z",

@@ -61,6 +61,7 @@ jobs:
             mingw-w64-ucrt-x86_64-qt5-base
             mingw-w64-ucrt-x86_64-qt5-svg
             mingw-w64-ucrt-x86_64-qt5-tools
+            mingw-w64-ucrt-x86_64-gdb
 
       - uses: actions/checkout@v4
 
@@ -74,3 +75,11 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: ctest --test-dir build --output-on-failure -V
+
+      - name: Debug failing tests with gdb
+        if: failure()
+        run: |
+          for t in actiontable_tests actionmanager_tests unit_tests; do
+            echo "=== gdb $t ==="
+            gdb -batch -ex run -ex bt "build/qimgv/tests/$t.exe" || true
+          done

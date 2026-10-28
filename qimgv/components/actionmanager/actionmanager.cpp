@@ -126,7 +126,8 @@ void ActionManager::saveShortcuts() {
 }
 //------------------------------------------------------------------------------
 QString ActionManager::actionForShortcut(const QString &keys) {
-    return actionManager->shortcuts[keys];
+    // value(), not operator[]: a lookup must not insert an empty entry
+    return actionManager->shortcuts.value(keys, "");
 }
 
 // returns first shortcut that is found
