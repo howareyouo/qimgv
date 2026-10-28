@@ -16,7 +16,6 @@ SCRIPTS_DIR="$(dirname "$(readlink -f "$0")")"
 SRC_DIR="$(dirname "$SCRIPTS_DIR")"
 BUILD_DIR="$SRC_DIR/build"
 EXT_DIR="$SRC_DIR/_external"
-QMAKE="$(command -v qmake-qt5 || command -v qmake)"
 
 rm -rf "$EXT_DIR"
 mkdir -p "$EXT_DIR"
@@ -45,6 +44,12 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-libavif \
     mingw-w64-ucrt-x86_64-libheif \
     mingw-w64-ucrt-x86_64-libraw
+
+QMAKE="$(command -v qmake-qt5 || command -v qmake || true)"
+if [[ -z "$QMAKE" ]]; then
+    echo "ERROR: qmake not found after installing qt5" >&2
+    exit 1
+fi
 
 # ------------------------------------------------------------------------------
 echo "BUILDING"
