@@ -21,6 +21,7 @@ public:
     QRect imageRect();
     float currentScale();
     QSize sourceSize();
+    QSize originalSize();
 
     void setInteractionEnabled(bool mode);
     bool interactionEnabled();

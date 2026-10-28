@@ -53,6 +53,8 @@ public:
     bool hasAnimation() const;
 
     QSize scaledSizeR() const;
+    // image display size at 1:1 (logical px)
+    QSize originalSizeR() const;
 
     void pauseResume();
     void enableDrags();

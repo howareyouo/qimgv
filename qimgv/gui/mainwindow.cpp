@@ -259,26 +259,34 @@ void MW::preShowResize(QSize sz) {
     qApp->processEvents(); // not needed anymore with patched qt?
 }
 
-// grows the window together with the image while zooming in,
-// keeping the image aspect ratio, until width or height reaches
-// the screen edge
+// grows / shrinks the window together with the image while zooming,
+// keeping the image aspect ratio, until width or height reaches the screen
+// edge; zooming out never shrinks the window below the image's original size
 void MW::onZoomChanged(qreal scale) {
-    if(zoomResizeGuard || imageLoading || !isVisible())
+    if(!isVisible())
         return;
-    // react to zooming in only; zooming out never shrinks the window
-    bool zoomedIn = (lastZoomScale >= 0.0f && scale > lastZoomScale + 0.0001f);
+    bool zoomedIn  = (lastZoomScale >= 0.0f && scale > lastZoomScale + 0.0001f);
+    bool zoomedOut = (lastZoomScale >= 0.0f && scale < lastZoomScale - 0.0001f);
     lastZoomScale = scale;
-    if(!zoomedIn || windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
+    if((!zoomedIn && !zoomedOut) || zoomResizeGuard || imageLoading)
+        return;
+    if(windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
         return;
     QSize imageSz = viewerWidget->imageRect().size();
+    if(zoomedOut) {
+        // never below the image's original (1:1) size
+        QSize original = viewerWidget->originalSize();
+        if(!original.isEmpty())
+            imageSz = imageSz.expandedTo(original);
+    }
     // defer so the zoom operation finishes with the current geometry first,
     // otherwise the viewport center it uses becomes stale
-    QTimer::singleShot(0, this, [this, imageSz]() {
-        growWindowForZoom(imageSz);
+    QTimer::singleShot(0, this, [this, imageSz, zoomedIn]() {
+        growWindowForZoom(imageSz, zoomedIn);
     });
 }
 
-void MW::growWindowForZoom(QSize imageSz) {
+void MW::growWindowForZoom(QSize imageSz, bool allowShrink) {
     if(imageSz.isEmpty() || zoomResizeGuard || imageLoading || !isVisible())
         return;
     if(windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
@@ -292,6 +300,12 @@ void MW::growWindowForZoom(QSize imageSz) {
     // window frame overhead (title bar etc.) and any client space not taken by the viewer
     QSize frameExtra(frameGeometry().width() - width(), frameGeometry().height() - height());
     QSize clientOverhead = size() - viewerWidget->size();
+    // never below the image's original (1:1) size when shrinking
+    if(allowShrink) {
+        QSize original = viewerWidget->originalSize();
+        if(!original.isEmpty())
+            imageSz = imageSz.expandedTo(original);
+    }
     // cap the image size at the screen edge, keeping its aspect ratio
     QSize maxImageSz(availableGeom.width() - frameExtra.width() - clientOverhead.width(),
                      availableGeom.height() - frameExtra.height() - clientOverhead.height());
@@ -299,10 +313,10 @@ void MW::growWindowForZoom(QSize imageSz) {
     if(imageSz.width() > maxImageSz.width() || imageSz.height() > maxImageSz.height())
         imageSz.scale(maxImageSz, Qt::KeepAspectRatio);
     QSize target = imageSz + clientOverhead;
-    // only grow, never shrink
+    // zooming in only ever grows the window
     QSize current = size();
-    target = QSize(qMax(target.width(), current.width()),
-                   qMax(target.height(), current.height()));
+    if(!allowShrink)
+        target = target.expandedTo(current);
     if(target == current)
         return;
     // keep the top-left corner in place, but keep the window on screen

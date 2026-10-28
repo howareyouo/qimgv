@@ -156,10 +156,11 @@ private:
     void setupSaveOverlay();
     void setupRenameOverlay();
     void preShowResize(QSize sz);
-    // grows the window together with the image while zooming in (keeping the
-    // image aspect ratio), until width or height reaches the screen edge
+    // grows / shrinks the window together with the image while zooming,
+    // keeping the image aspect ratio, until width or height reaches
+    // the screen edge; the window never goes below the image's original size
     void onZoomChanged(qreal scale);
-    void growWindowForZoom(QSize imageSz);
+    void growWindowForZoom(QSize imageSz, bool allowShrink);
     qreal lastZoomScale;
     bool zoomResizeGuard, imageLoading;
     void setInteractionEnabled(bool mode);

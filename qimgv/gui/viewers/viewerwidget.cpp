@@ -78,6 +78,13 @@ QSize ViewerWidget::sourceSize() {
         return QSize(0,0);
 }
 
+QSize ViewerWidget::originalSize() {
+    if(currentWidget == IMAGEVIEWER)
+        return imageViewer->originalSizeR();
+    else
+        return QSize(0,0);
+}
+
 void ViewerWidget::enableImageViewer() {
     if(currentWidget != IMAGEVIEWER) {
         connect(imageViewer.get(), &ImageViewerV2::durationChanged, videoControls, &VideoControlsProxyWrapper::setPlaybackDuration);

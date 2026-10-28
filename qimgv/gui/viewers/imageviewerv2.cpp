@@ -1325,6 +1325,12 @@ QSize ImageViewerV2::scaledSizeR() const {
     return sceneRoundRect(pixmapSceneRect).size().toSize();
 }
 
+QSize ImageViewerV2::originalSizeR() const {
+    if(!pixmap)
+        return QSize(0,0);
+    return QSize(qRound(pixmap->width() / dpr), qRound(pixmap->height() / dpr));
+}
+
 // in viewport coords (rounded up)
 QRect ImageViewerV2::scaledRectR() const {
     QRectF pixmapSceneRect = pixmapItem.mapRectToScene(pixmapItem.boundingRect());
