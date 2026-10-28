@@ -19,18 +19,21 @@ set(TEST_SUPPORT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/scriptmanager_stub.cpp
 )
 
-add_executable(action_tests
-    test_actiontable.cpp
-    test_actionmanager.cpp
-    ${TEST_SUPPORT_SOURCES}
-)
-target_link_libraries(action_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Widgets)
-add_test(NAME action_tests COMMAND action_tests)
+add_library(qimgv_test_support STATIC ${TEST_SUPPORT_SOURCES})
+target_link_libraries(qimgv_test_support
+    PUBLIC Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Widgets)
+
+add_executable(actiontable_tests test_actiontable.cpp)
+target_link_libraries(actiontable_tests PRIVATE qimgv_test_support)
+add_test(NAME actiontable_tests COMMAND actiontable_tests)
+
+add_executable(actionmanager_tests test_actionmanager.cpp)
+target_link_libraries(actionmanager_tests PRIVATE qimgv_test_support)
+add_test(NAME actionmanager_tests COMMAND actionmanager_tests)
 
 add_executable(unit_tests
     test_mapoverlay.cpp
     ../gui/overlays/mapoverlay.cpp
-    ${TEST_SUPPORT_SOURCES}
 )
-target_link_libraries(unit_tests PRIVATE Qt${QT_VERSION_MAJOR}::Test Qt${QT_VERSION_MAJOR}::Widgets)
-add_test(NAME QUI_TEST COMMAND unit_tests)
+target_link_libraries(unit_tests PRIVATE qimgv_test_support)
+add_test(NAME unit_tests COMMAND unit_tests)
