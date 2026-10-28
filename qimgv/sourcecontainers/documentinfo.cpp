@@ -191,9 +191,20 @@ void DocumentInfo::loadExifTags() {
     exifTags.clear();
 #ifdef USE_EXIV2
     try {
+        // exiv2 >= 0.28 dropped the wide-char path API on Windows, so feed the
+        // file contents directly. This also keeps non-ASCII paths working.
+        QFile exifFile(fileInfo.filePath());
+        if(!exifFile.open(QFile::ReadOnly))
+            return;
+        const QByteArray exifBuffer = exifFile.readAll();
+        if(exifBuffer.isEmpty())
+            return;
+
         std::unique_ptr<Exiv2::Image> image;
 
-        image = Exiv2::ImageFactory::open(toStdString(fileInfo.filePath()));
+        image = Exiv2::ImageFactory::open(
+            reinterpret_cast<const Exiv2::byte*>(exifBuffer.constData()),
+            static_cast<size_t>(exifBuffer.size()));
 
         assert(image.get() != 0);
         image->readMetadata();
