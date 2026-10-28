@@ -2,6 +2,10 @@ name: msys2 dev-latest
 on: [workflow_dispatch]
 permissions:
   contents: write
+# a new run supersedes the one in flight
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 #on:
 #  push:
 #    branches:
