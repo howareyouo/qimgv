@@ -75,7 +75,7 @@ if ! ( set +e
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
-        -DCMAKE_PREFIX_PATH="$PREFIX" \
+        -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
     echo "WARNING: qt-jpegxl-image-plugin failed; JXL support will be missing" >&2
@@ -88,7 +88,7 @@ if ! ( set +e
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
-        -DCMAKE_PREFIX_PATH="$PREFIX" \
+        -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
     echo "WARNING: qt-avif-image-plugin failed; AVIF support will be missing" >&2
@@ -111,7 +111,7 @@ if ! ( set +e
     cd qt-heif-image-plugin &&
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_PREFIX_PATH="$PREFIX" \
+        -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
     echo "WARNING: qt-heif-image-plugin failed; HEIF support will be missing" >&2
