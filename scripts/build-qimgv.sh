@@ -8,6 +8,11 @@
 #   exiv2   - no curl/webready support (drops the whole curl/openssl chain)
 #   libavif - dav1d decoder only (drops aom/rav1e/svt-av1 encoder DLLs)
 #   libheif - libde265 decoder only (drops x265/openh264 encoder DLLs)
+#
+# Caching: external lib prefixes, the qimgv build dir and the image format
+# plugins are reused between runs, so repeated builds only recompile what
+# changed. CLEAN=1 also wipes the qimgv build dir; FULL=1 additionally wipes
+# _external/ (forcing exiv2/libavif/libheif + plugins to rebuild from scratch).
 set -euo pipefail
 
 CFL='-ffunction-sections -fdata-sections -O3 -pipe'
@@ -24,12 +29,16 @@ SRC_DIR="$(dirname "$SCRIPTS_DIR")"
 BUILD_DIR="$SRC_DIR/build"
 EXT_DIR="$SRC_DIR/_external"
 
-rm -rf "$EXT_DIR"
+if [[ "${FULL:-0}" == "1" ]]; then
+    rm -rf "$EXT_DIR"
+fi
 mkdir -p "$EXT_DIR"
 
 # ------------------------------------------------------------------------------
 echo "PREPARING BUILD DIR"
-rm -rf "$BUILD_DIR"
+if [[ "${CLEAN:-0}" == "1" || "${FULL:-0}" == "1" ]]; then
+    rm -rf "$BUILD_DIR"
+fi
 mkdir -p "$BUILD_DIR"
 
 # ------------------------------------------------------------------------------
@@ -38,7 +47,7 @@ echo "INSTALLING UCRT64 BUILD DEPS"
 # libde265/dav1d are the decoders linked into the source-built libheif/libavif;
 # zlib/libiconv/inih are exiv2's remaining dependencies.
 pacman -S --noconfirm --needed \
-    git p7zip mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
+    git p7zip ccache mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
     mingw-w64-ucrt-x86_64-gcc \
     mingw-w64-ucrt-x86_64-make \
     mingw-w64-ucrt-x86_64-pkgconf \
@@ -67,21 +76,41 @@ if [[ -z "$QMAKE" ]]; then
     exit 1
 fi
 
+# ccache accelerates recompiles of the source-built externals and qimgv itself
+# (also across clean rebuilds, e.g. after a CFLAGS change)
+CCACHE_ARGS=()
+if command -v ccache >/dev/null 2>&1; then
+    CCACHE_ARGS=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
+    echo "ccache enabled"
+fi
+
 # ------------------------------------------------------------------------------
 echo "BUILDING SUPPORT LIBS (exiv2 / libavif / libheif)"
 # Clones one repo at a tag, configures it and installs into
 # _external/<name>-prefix. Install prefixes use Windows-style paths because the
 # resulting .pc/cmake files are consumed by native cmake and pkgconf.
+# Skipped entirely when the prefix already exists with the same tag + options
+# (a .built-stamp file records the last build); delete _external/ or set FULL=1
+# to force a rebuild.
 build_from_git() {
     local name="$1" repo="$2" tag="$3"
     shift 3
+    local stamp="$EXT_DIR/$name-prefix/.built-stamp"
+    local stamp_value="$tag $*"
+    if [[ -f "$stamp" && "$(cat "$stamp")" == "$stamp_value" ]]; then
+        echo "--- $name ($tag): cached, skipping"
+        return 0
+    fi
     echo "--- $name ($tag)"
+    rm -rf "$EXT_DIR/$name" "$EXT_DIR/$name-build" "$EXT_DIR/$name-prefix"
     git clone --depth 1 --branch "$tag" "$repo" "$EXT_DIR/$name"
     cmake -S "$EXT_DIR/$name" -B "$EXT_DIR/$name-build" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$EXT_DIR/$name-prefix")" \
+        "${CCACHE_ARGS[@]}" \
         "$@"
     ninja -C "$EXT_DIR/$name-build" install
+    printf '%s\n' "$stamp_value" > "$stamp"
 }
 
 # exiv2: no network support; enough for reading and writing EXIF tags
@@ -139,6 +168,7 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$PREFIX" \
     -DOPENCV_SUPPORT=ON \
+    "${CCACHE_ARGS[@]}" \
     -DCMAKE_CXX_FLAGS="$CFL" \
     -DCMAKE_EXE_LINKER_FLAGS="$LDFL"
 ninja -C "$BUILD_DIR"
@@ -147,13 +177,24 @@ ninja -C "$BUILD_DIR"
 echo "BUILDING IMAGEFORMATS"
 # Optional plugins: a failure here must not hide the main build result,
 # the corresponding format simply stays unsupported.
+# Each plugin is cloned into _external/<name> and built into _external/<name>/build;
+# both steps are skipped when the built plugin DLL is already there.
+plugin_cached() {
+    find "$EXT_DIR/$1" -name "$2" -print -quit 2>/dev/null | grep -q .
+}
+
 if ! ( set +e
+    if plugin_cached qt-jpegxl-image-plugin libqjpegxl5.dll; then
+        echo "--- qt-jpegxl-image-plugin: cached, skipping"
+        exit 0
+    fi
     cd "$EXT_DIR"
-    git clone --depth 1 https://github.com/novomesk/qt-jpegxl-image-plugin.git &&
+    [[ -d qt-jpegxl-image-plugin ]] || git clone --depth 1 https://github.com/novomesk/qt-jpegxl-image-plugin.git
     cd qt-jpegxl-image-plugin &&
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
+        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
@@ -161,12 +202,17 @@ if ! ( set +e
 fi
 
 if ! ( set +e
+    if plugin_cached qt-avif-image-plugin libqavif5.dll; then
+        echo "--- qt-avif-image-plugin: cached, skipping"
+        exit 0
+    fi
     cd "$EXT_DIR"
-    git clone --depth 1 https://github.com/novomesk/qt-avif-image-plugin.git &&
+    [[ -d qt-avif-image-plugin ]] || git clone --depth 1 https://github.com/novomesk/qt-avif-image-plugin.git
     cd qt-avif-image-plugin &&
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
+        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$(cygpath -m "$EXT_DIR/avif-prefix");$PREFIX" &&
     ninja -C build
 ); then
@@ -174,22 +220,31 @@ if ! ( set +e
 fi
 
 if ! ( set +e
+    if plugin_cached QtApng qapng.dll; then
+        echo "--- QtApng: cached, skipping"
+        exit 0
+    fi
     cd "$EXT_DIR"
-    git clone --depth 1 https://github.com/Skycoder42/QtApng.git &&
+    [[ -d QtApng ]] || git clone --depth 1 https://github.com/Skycoder42/QtApng.git
     cd QtApng &&
     mkdir -p build && cd build &&
     "$QMAKE" .. &&
-    mingw32-make -j4
+    mingw32-make -j"$(nproc)"
 ); then
     echo "WARNING: QtApng failed; APNG support will be missing" >&2
 fi
 
 if ! ( set +e
+    if plugin_cached qt-heif-image-plugin libqheif.dll; then
+        echo "--- qt-heif-image-plugin: cached, skipping"
+        exit 0
+    fi
     cd "$EXT_DIR"
-    git clone --depth 1 https://github.com/jakar/qt-heif-image-plugin.git &&
+    [[ -d qt-heif-image-plugin ]] || git clone --depth 1 https://github.com/jakar/qt-heif-image-plugin.git
     cd qt-heif-image-plugin &&
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
+        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
@@ -197,12 +252,16 @@ if ! ( set +e
 fi
 
 if ! ( set +e
+    if plugin_cached qtraw qtraw.dll; then
+        echo "--- qtraw: cached, skipping"
+        exit 0
+    fi
     cd "$EXT_DIR"
-    git clone --depth 1 https://gitlab.com/mardy/qtraw &&
+    [[ -d qtraw ]] || git clone --depth 1 https://gitlab.com/mardy/qtraw
     cd qtraw &&
     mkdir -p build && cd build &&
     "$QMAKE" .. DEFINES+="LIBRAW_WIN32_CALLS=1" &&
-    mingw32-make -j4
+    mingw32-make -j"$(nproc)"
 ); then
     echo "WARNING: qtraw failed; RAW support will be missing" >&2
 fi
