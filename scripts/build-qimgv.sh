@@ -165,7 +165,7 @@ mingw32-make -j4
 echo "PACKAGING"
 # 0 - prepare dir
 cd $SRC_DIR
-BUILD_NAME=qimgv-x64_$(git describe --tags)
+BUILD_NAME=qimgv-x64_$(git describe --tags --always)
 PACKAGE_DIR=$SRC_DIR/$BUILD_NAME
 rm -rf $PACKAGE_DIR
 mkdir $PACKAGE_DIR
