@@ -47,7 +47,7 @@ echo "INSTALLING UCRT64 BUILD DEPS"
 # libde265/dav1d are the decoders linked into the source-built libheif/libavif;
 # zlib/libiconv/inih are exiv2's remaining dependencies.
 pacman -S --noconfirm --needed \
-    git p7zip ccache mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
+    git p7zip mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
     mingw-w64-ucrt-x86_64-gcc \
     mingw-w64-ucrt-x86_64-make \
     mingw-w64-ucrt-x86_64-pkgconf \
@@ -76,13 +76,9 @@ if [[ -z "$QMAKE" ]]; then
     exit 1
 fi
 
-# ccache accelerates recompiles of the source-built externals and qimgv itself
-# (also across clean rebuilds, e.g. after a CFLAGS change)
-CCACHE_ARGS=()
-if command -v ccache >/dev/null 2>&1; then
-    CCACHE_ARGS=(-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache)
-    echo "ccache enabled"
-fi
+# ccache's compiler launcher does not work in this MSYS2/CI setup (ccache
+# cannot resolve the Windows-style compiler path from PATH), so builds run
+# without it; the prefix/plugin caches below cover the reuse instead.
 
 # ------------------------------------------------------------------------------
 echo "BUILDING SUPPORT LIBS (exiv2 / libavif / libheif)"
@@ -107,7 +103,6 @@ build_from_git() {
     cmake -S "$EXT_DIR/$name" -B "$EXT_DIR/$name-build" -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$(cygpath -m "$EXT_DIR/$name-prefix")" \
-        "${CCACHE_ARGS[@]}" \
         "$@"
     ninja -C "$EXT_DIR/$name-build" install
     printf '%s\n' "$stamp_value" > "$stamp"
@@ -168,7 +163,6 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$PREFIX" \
     -DOPENCV_SUPPORT=ON \
-    "${CCACHE_ARGS[@]}" \
     -DCMAKE_CXX_FLAGS="$CFL" \
     -DCMAKE_EXE_LINKER_FLAGS="$LDFL"
 ninja -C "$BUILD_DIR"
@@ -194,7 +188,6 @@ if ! ( set +e
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
-        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
@@ -212,7 +205,6 @@ if ! ( set +e
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DQT_MAJOR_VERSION=5 \
-        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$(cygpath -m "$EXT_DIR/libavif-prefix");$PREFIX" &&
     ninja -C build
 ); then
@@ -244,7 +236,6 @@ if ! ( set +e
     cd qt-heif-image-plugin &&
     cmake -S . -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        "${CCACHE_ARGS[@]}" \
         -DCMAKE_PREFIX_PATH="$PREFIX" &&
     ninja -C build
 ); then
