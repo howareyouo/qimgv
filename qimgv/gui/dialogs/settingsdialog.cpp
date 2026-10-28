@@ -1,6 +1,10 @@
 #include "settingsdialog.h"
 #include "ui_settingsdialog.h"
 
+#include <QDir>
+#include <QFileInfo>
+#include <QHash>
+
 SettingsDialog::SettingsDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SettingsDialog)
@@ -96,14 +100,33 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     zoomIndGrp.addButton(ui->zoomIndicatorOn);
 
     // readable language names
-    langs.insert("de_DE", "Deutsch");
     langs.insert("en_US", "English");
-    langs.insert("es_ES", "Español");
-    langs.insert("fr_FR", "Français");
-    langs.insert("ja_JP", "日本語");
-    langs.insert("tr_TR", "Türkçe");
-    langs.insert("uk_UA", "Українська");
-    langs.insert("zh_CN", "简体中文");
+    static const QHash<QString, QString> languageNames = {
+        {"de_DE", "Deutsch"},
+        {"es_ES", "Español"},
+        {"fr_FR", "Français"},
+        {"ja_JP", "日本語"},
+        {"tr_TR", "Türkçe"},
+        {"uk_UA", "Українська"},
+        {"zh_CN", "简体中文"}
+    };
+    // list only the languages actually shipped in ./translations — deleting a
+    // .qm file also removes it from this list. qtbase_*.qm are Qt's own dialog
+    // strings, not qimgv languages.
+    QStringList trDirs;
+#ifdef TRANSLATIONS_PATH
+    trDirs << QString(TRANSLATIONS_PATH);
+#endif
+    trDirs << QCoreApplication::applicationDirPath() + "/translations";
+    for(const QString &dirPath : trDirs) {
+        const QFileInfoList qmFiles = QDir(dirPath).entryInfoList({"*.qm"}, QDir::Files, QDir::Name);
+        for(const QFileInfo &fi : qmFiles) {
+            QString code = fi.completeBaseName();
+            if(code.startsWith("qtbase_") || !languageNames.contains(code) || langs.contains(code))
+                continue;
+            langs.insert(code, languageNames[code]);
+        }
+    }
     // fill langs combobox, sorted by locale
     ui->langComboBox->addItems(langs.values());
     // insert system language entry manually at the beginning
@@ -256,7 +279,7 @@ void SettingsDialog::readSettings() {
     // language
     QString langName = langs.value(settings->language());
     if(langName.isEmpty() || ui->langComboBox->findText(langName) == -1)
-        ui->langComboBox->setCurrentText("en_US");
+        ui->langComboBox->setCurrentText(langs.value("en_US", "English"));
     else
         ui->langComboBox->setCurrentText(langName);
 

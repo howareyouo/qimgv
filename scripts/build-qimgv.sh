@@ -288,7 +288,6 @@ done
 rm -f "$PACKAGE_DIR/imageformats/qicns.dll" \
       "$PACKAGE_DIR/imageformats/qwbmp.dll" \
       "$PACKAGE_DIR/imageformats/qtga.dll"
-cp "$PREFIX"/share/qt5/translations/qtbase_*.qm "$PACKAGE_DIR/translations/" 2>/dev/null || true
 
 # 3 - extra image format plugins
 copy_plugin() {
