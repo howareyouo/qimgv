@@ -20,6 +20,7 @@ enum MouseInteractionState {
     MOUSE_DRAG_BEGIN,
     MOUSE_DRAG,
     MOUSE_PAN,
+    MOUSE_WINDOW_MOVE,
     MOUSE_ZOOM,
     MOUSE_WHEEL_ZOOM
 };
@@ -56,6 +57,10 @@ public:
     void pauseResume();
     void enableDrags();
     void disableDrags();
+    // move the top-level window by dragging the image area (only used when the
+    // image is not zoomed in, i.e. when there is nothing to pan); requires a
+    // frameless window since a normal one can be dragged by its title bar
+    void setWindowDragEnabled(bool mode);
 
 signals:
     void scalingRequested(QSize, ScalingFilter);
@@ -153,7 +158,11 @@ private:
     int dragThreshold = 10;
 
     bool dragsEnabled = true;
+    bool windowDragEnabled = false;
     bool wayland = false;
+    // global pos of the mouse and top-left corner of the window when a
+    // MOUSE_WINDOW_MOVE interaction was started
+    QPoint windowMoveStartGlobalPos, windowMoveStartWindowPos;
 
     float zoomStep = 0.1, dpr;
     float minScale, maxScale, fitWindowScale, fitWindowStretchScale, expandLimit, lockedScale;
@@ -180,6 +189,7 @@ private:
 
     void mousePanWrapping(QMouseEvent *event);
     void mousePan(QMouseEvent *event);
+    void mouseMoveWindow(QMouseEvent *event);
     void mouseMoveZoom(QMouseEvent *event);
     void reset();
     void applyFitMode();

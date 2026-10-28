@@ -16,7 +16,6 @@ Settings::Settings(QObject *parent) : QObject(parent) {
     stateConf = new QSettings(mConfDir->absolutePath() + "/savedState.ini", QSettings::IniFormat);
     themeConf = new QSettings(mConfDir->absolutePath() + "/theme.ini", QSettings::IniFormat);
 #endif
-    fillVideoFormats();
 }
 //------------------------------------------------------------------------------
 Settings::~Settings() {
@@ -274,48 +273,11 @@ void Settings::setColorTid(int tid) {
     mColorScheme.tid = tid;
 }
 //------------------------------------------------------------------------------
-void Settings::fillVideoFormats() {
-    mVideoFormatsMap.insert("video/webm",       "webm");
-    mVideoFormatsMap.insert("video/mp4",        "mp4");
-    mVideoFormatsMap.insert("video/mp4",        "m4v");
-    mVideoFormatsMap.insert("video/mpeg",       "mpg");
-    mVideoFormatsMap.insert("video/mpeg",       "mpeg");
-    mVideoFormatsMap.insert("video/x-matroska", "mkv");
-    mVideoFormatsMap.insert("video/x-ms-wmv",   "wmv");
-    mVideoFormatsMap.insert("video/x-msvideo",  "avi");
-    mVideoFormatsMap.insert("video/quicktime",  "mov");
-    mVideoFormatsMap.insert("video/x-flv",      "flv");
-}
-//------------------------------------------------------------------------------
-QString Settings::mpvBinary() {
-    QString mpvPath = settings->settingsConf->value("mpvBinary", "").toString();
-    if(!QFile::exists(mpvPath)) {
-    #ifdef _WIN32
-        mpvPath = QCoreApplication::applicationDirPath() + "/mpv.exe";
-    #elif defined __linux__
-        mpvPath = "/usr/bin/mpv";
-    #elif defined __FreeBSD__
-        mpvPath = "/usr/local/bin/mpv";
-    #endif
-        if(!QFile::exists(mpvPath))
-            mpvPath = "";
-    }
-    return mpvPath;
-}
-
-void Settings::setMpvBinary(QString path) {
-    if(QFile::exists(path)) {
-        settings->settingsConf->setValue("mpvBinary", path);
-    }
-}
-//------------------------------------------------------------------------------
 QList<QByteArray> Settings::supportedFormats() {
     // enumerating image format plugins is expensive, so cache the result
     static const QList<QByteArray> readerFormats = QImageReader::supportedImageFormats();
     auto formats = readerFormats;
     formats << "jfif";
-    if(videoPlayback())
-        formats << mVideoFormatsMap.values();
     formats.removeAll("pdf");
     return formats;
 }
@@ -348,24 +310,10 @@ QStringList Settings::supportedMimeTypes() {
     static const QList<QByteArray> readerMimeTypes = QImageReader::supportedMimeTypes();
     QStringList filters;
     QList<QByteArray> mimeTypes = readerMimeTypes;
-    if(videoPlayback())
-        mimeTypes << mVideoFormatsMap.keys();
     for(int i = 0; i < mimeTypes.count(); i++) {
         filters << QString(mimeTypes.at(i));
     }
     return filters;
-}
-//------------------------------------------------------------------------------
-bool Settings::videoPlayback() {
-#ifdef USE_MPV
-    return settings->settingsConf->value("videoPlayback", true).toBool();
-#else
-    return false;
-#endif
-}
-
-void Settings::setVideoPlayback(bool mode) {
-    settings->settingsConf->setValue("videoPlayback", mode);
 }
 //------------------------------------------------------------------------------
 bool Settings::useSystemColorScheme() {
@@ -441,22 +389,6 @@ SortingMode Settings::sortingMode() {
     return static_cast<SortingMode>(mode);
 }
 //------------------------------------------------------------------------------
-bool Settings::playVideoSounds() {
-    return settings->settingsConf->value("playVideoSounds", false).toBool();
-}
-
-void Settings::setPlayVideoSounds(bool mode) {
-    settings->settingsConf->setValue("playVideoSounds", mode);
-}
-//------------------------------------------------------------------------------
-void Settings::setVolume(int vol) {
-    settings->stateConf->setValue("volume", vol);
-}
-
-int Settings::volume() {
-    return settings->stateConf->value("volume", 100).toInt();
-}
-//------------------------------------------------------------------------------
 FolderViewMode Settings::folderViewMode() {
     int mode = settings->settingsConf->value("folderViewMode", 2).toInt();
     if(mode < 0 || mode >= 3)
@@ -477,10 +409,6 @@ ThumbPanelStyle Settings::thumbPanelStyle() {
 
 void Settings::setThumbPanelStyle(ThumbPanelStyle mode) {
     settings->settingsConf->setValue("thumbPanelStyle", mode);
-}
-//------------------------------------------------------------------------------
-const QMultiMap<QByteArray, QByteArray> Settings::videoFormats() const {
-    return mVideoFormatsMap;
 }
 //------------------------------------------------------------------------------
 int Settings::panelPreviewsSize() {

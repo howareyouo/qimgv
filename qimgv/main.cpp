@@ -86,7 +86,6 @@ int main(int argc, char *argv[]) {
     QApplication::setEffectEnabled(Qt::UI_AnimateCombo, false);
     QGuiApplication::setDesktopFileName(QCoreApplication::applicationName() + ".desktop");
 
-    // needed for mpv
 #ifndef _MSC_VER
     setlocale(LC_NUMERIC, "C");
 #endif

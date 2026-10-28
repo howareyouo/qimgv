@@ -34,9 +34,6 @@ void CmdOptionsRunner::generateThumbs(QString dirPath, int size) {
 
 void CmdOptionsRunner::showBuildOptions() {
     QStringList features;
-#ifdef USE_MPV
-    features << "USE_MPV";
-#endif
 #ifdef USE_EXIV2
     features << "USE_EXIV2";
 #endif

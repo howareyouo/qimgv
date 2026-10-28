@@ -71,7 +71,6 @@ public:
     void onScalingFinished(std::unique_ptr<QPixmap>scaled);
     void showImage(std::unique_ptr<QPixmap> pixmap);
     void showAnimation(std::shared_ptr<QMovie> movie);
-    void showVideo(QString file);
 
     void setCurrentInfo(int fileIndex, int fileCount, QString filePath, QString fileName, QSize imageSize, qint64 fileSize, bool slideshow, bool shuffle, bool edited);
     void setExifInfo(QMap<QString, QString>);
@@ -136,6 +135,9 @@ private:
     bool isFramelessActive() const;
     Qt::Edges framelessEdgesAt(const QPoint &windowPos) const;
     void applyFramelessWindow(bool mode);
+    // lets the image viewer move the window by dragging the image area
+    // (when the frameless window is active and the image is not zoomed in)
+    void updateWindowDragEnabled();
 
     void applyWindowedBackground();
     void applyFullscreenBackground();
@@ -203,13 +205,8 @@ signals:
     void scrollRight();
     void pauseVideo();
     void stopPlayback();
-    void seekVideoForward();
-    void seekVideoBackward();
     void frameStep();
     void frameStepBack();
-    void toggleMute();
-    void volumeUp();
-    void volumeDown();
     void toggleTransparencyGrid();
     void droppedIn(const QMimeData*, QObject*);
     void draggedOut();

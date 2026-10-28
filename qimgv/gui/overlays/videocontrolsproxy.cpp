@@ -20,11 +20,9 @@ void VideoControlsProxyWrapper::init() {
     connect(videoControls, &VideoControls::seekForward, this, &VideoControlsProxyWrapper::seekForward);
     connect(videoControls, &VideoControls::seek,      this, &VideoControlsProxyWrapper::seek);
 
-    videoControls->setMode(stateBuf.mode);
     videoControls->setPlaybackDuration(stateBuf.duration);
     videoControls->setPlaybackPosition(stateBuf.position);
     videoControls->onPlaybackPaused(stateBuf.paused);
-    videoControls->onVideoMuted(stateBuf.videoMuted);
 }
 
 void VideoControlsProxyWrapper::show() {
@@ -53,27 +51,11 @@ void VideoControlsProxyWrapper::setPlaybackPosition(int _position) {
     }
 }
 
-void VideoControlsProxyWrapper::setMode(PlaybackMode _mode) {
-    if(videoControls) {
-        videoControls->setMode(_mode);
-    } else {
-        stateBuf.mode = _mode;
-    }
-}
-
 void VideoControlsProxyWrapper::onPlaybackPaused(bool _mode) {
     if(videoControls) {
         videoControls->onPlaybackPaused(_mode);
     } else {
         stateBuf.paused = _mode;
-    }
-}
-
-void VideoControlsProxyWrapper::onVideoMuted(bool _mode) {
-    if(videoControls) {
-        videoControls->onVideoMuted(_mode);
-    } else {
-        stateBuf.videoMuted = _mode;
     }
 }
 

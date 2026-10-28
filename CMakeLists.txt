@@ -20,9 +20,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # USER OPTIONS
-# Usage: cmake -DVIDEO_SUPPORT=ON [...]
+# Usage: cmake -DEXIV2=OFF -DOPENCV_SUPPORT=OFF [...]
 option(EXIV2 "For reading/writing exif tags" ON)
-option(VIDEO_SUPPORT "Enable video support" ON)
 option(OPENCV_SUPPORT "Enable HQ scaling via OpenCV" ON)
 option(KDE_SUPPORT "Support blur when using KDE" OFF)
 option(USE_QT5 "Build with Qt5 if available" ON)
@@ -76,7 +75,3 @@ endif()
 ##############################################################
 
 add_subdirectory(qimgv)
-
-if(VIDEO_SUPPORT)
-    add_subdirectory(plugins/player_mpv)
-endif()

@@ -116,13 +116,7 @@ public:
     void setImageFitMode(ImageFitMode mode);
     QRect windowGeometry();
     void setWindowGeometry(QRect geometry);
-    bool playVideoSounds();
-    void setPlayVideoSounds(bool mode);
-    void setVolume(int vol);
-    int volume();
     QString thumbnailCacheDir();
-    QString mpvBinary();
-    void setMpvBinary(QString path);
     PanelPosition panelPosition();
     void setPanelPosition(PanelPosition);
     bool loopSlideshow();
@@ -234,9 +228,6 @@ public:
     void setColorScheme(ColorScheme scheme);
     void setColorTid(int tid);
 
-    bool videoPlayback();
-    void setVideoPlayback(bool mode);
-
     bool useSystemColorScheme();
     void setUseSystemColorScheme(bool mode);
 
@@ -251,8 +242,6 @@ public:
 
     FolderViewMode folderViewMode();
     void setFolderViewMode(FolderViewMode mode);
-
-    const QMultiMap<QByteArray, QByteArray> videoFormats() const;
 
     bool printLandscape();
     void setPrintLandscape(bool mode);
@@ -317,13 +306,11 @@ private:
     QSettings *settingsConf, *stateConf, *themeConf;
     QDir *mTmpDir, *mThumbCacheDir, *mConfDir;
     ColorScheme mColorScheme;
-    QMultiMap<QByteArray, QByteArray> mVideoFormatsMap; // [mimetype, format]
     void loadTheme();
     void saveTheme();
     void createColorVariants();
 
     void setupCache();
-    void fillVideoFormats();
 
 signals:
     void settingsChanged();

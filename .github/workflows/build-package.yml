@@ -29,17 +29,19 @@ jobs:
         run: |
           export BUILD_NAME="qimgv-x64_$(git describe --tags --always)"
           echo "build_name=${BUILD_NAME}" >> $GITHUB_OUTPUT
-          echo "build_file_name=${BUILD_NAME}.7z" >> $GITHUB_OUTPUT
+          echo "build_file_name=${BUILD_NAME}.zip" >> $GITHUB_OUTPUT
           ./scripts/build-qimgv.sh
-          pwd
-          ls -al
-          echo "running: 7z a qimgv-x64.7z ./${BUILD_NAME}"
-          7z a qimgv-x64.7z ./${BUILD_NAME}
+          # Archive the contents of the package dir, not the dir itself, so that
+          # one extraction yields qimgv.exe directly.
+          ( cd "${BUILD_NAME}" && 7z a -tzip "../${BUILD_NAME}.zip" * )
+          ls -al *.zip
 
-      - uses: actions/upload-artifact@v4
+      # archive: false uploads the zip as-is, so downloading the artifact gives
+      # the release archive itself instead of a second zip wrapped around it.
+      - uses: actions/upload-artifact@v7
         with:
-          name: qimgv-build
-          path: qimgv-x64.7z
+          path: ${{ steps.build.outputs.build_file_name }}
+          archive: false
 
     outputs:
        build_name: ${{ steps.build.outputs.build_name }}
@@ -49,13 +51,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-       #- run: echo "${{ needs.build.outputs.build_name }}"
-       - uses: actions/download-artifact@v4
-         with: 
-           name: qimgv-build
-
-       - name: Rename archive
-         run: mv qimgv-x64.7z "${{ needs.build.outputs.build_file_name }}"
+       # skip-decompress keeps the archive intact instead of unpacking it
+       - uses: actions/download-artifact@v8
+         with:
+           name: ${{ needs.build.outputs.build_file_name }}
+           skip-decompress: true
 
        - uses: softprops/action-gh-release@v2
          #if: startsWith(github.ref, 'refs/tags/')

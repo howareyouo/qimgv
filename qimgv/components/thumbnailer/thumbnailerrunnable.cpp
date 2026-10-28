@@ -42,10 +42,7 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
             return thumbnail;
         }
         std::pair<QImage*, QSize> pair;
-        if(imgInfo.type() == VIDEO)
-            pair = createVideoThumbnail(path, size, crop);
-        else
-            pair = createThumbnail(imgInfo.filePath(), imgInfo.format().toStdString().c_str(), size, crop);
+        pair = createThumbnail(imgInfo.filePath(), imgInfo.format().toStdString().c_str(), size, crop);
         image.reset(pair.first);
         QSize originalSize = pair.second;
 
@@ -58,8 +55,6 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
 
         if(imgInfo.type() == ANIMATED)
             image->setText("label", " [a]");
-        else if(imgInfo.type() == VIDEO)
-            image->setText("label", " [v]");
 
         if(cache) {
             // save thumbnail if it makes sense
@@ -153,52 +148,3 @@ std::pair<QImage*, QSize> ThumbnailerRunnable::createThumbnail(QString path, con
     return std::make_pair(result, originalSize);
 }
 
-std::pair<QImage*, QSize> ThumbnailerRunnable::createVideoThumbnail(QString path, int size, bool squared) {
-    QFileInfo fi(path);
-    QImageReader reader;
-    QString tmpFilePath = settings->tmpDir() + fi.fileName() + ".png";
-    QString tmpFilePathEsc = tmpFilePath;
-    tmpFilePathEsc.replace("%", "%%");
-    QProcess process;
-    process.setProcessChannelMode(QProcess::MergedChannels);
-    process.start(settings->mpvBinary(),
-                  QStringList() << "--start=30%"
-                                << "--frames=1"
-                                << "--aid=no"
-                                << "--sid=no"
-                                << "--no-config"
-                                << "--load-scripts=no"
-                                << "--no-terminal"
-                                << "--o=" + tmpFilePathEsc
-                                << path
-                  );
-    process.waitForFinished(8000);
-    process.close();
-
-    reader.setFileName(tmpFilePath);
-    reader.setFormat("png");
-    Qt::AspectRatioMode ARMode = squared?
-                (Qt::KeepAspectRatioByExpanding):(Qt::KeepAspectRatio);
-    QImage *result = nullptr;
-
-    // scale & crop
-    QSize scaledSize = reader.size().scaled(size, size, ARMode);
-    reader.setScaledSize(scaledSize);
-    if(squared) {
-        QRect clip(0, 0, size, size);
-        QRect scaledRect(QPoint(0,0), scaledSize);
-        clip.moveCenter(scaledRect.center());
-        reader.setScaledClipRect(clip);
-    }
-    QSize originalSize = reader.size();
-    result = new QImage(reader.read());
-
-    // force reader to close file so it can be deleted later
-    reader.setFileName("");
-
-    // remove temporary file
-    QFile tmpFile(tmpFilePath);
-    tmpFile.remove();
-
-    return std::make_pair(result, originalSize);
-}

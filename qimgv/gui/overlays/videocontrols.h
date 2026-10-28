@@ -8,11 +8,6 @@ namespace Ui {
 class VideoControls;
 }
 
-enum PlaybackMode {
-    PLAYBACK_ANIMATION,
-    PLAYBACK_VIDEO
-};
-
 class VideoControls : public OverlayWidget
 {
     Q_OBJECT
@@ -25,8 +20,6 @@ public slots:
     void setPlaybackDuration(int);
     void setPlaybackPosition(int);
     void onPlaybackPaused(bool);
-    void onVideoMuted(bool);
-    void setMode(PlaybackMode _mode);
 
 signals:
     void seek(int pos);
@@ -39,5 +32,4 @@ private slots:
 private:
     Ui::VideoControls *ui;
     int lastPosition;
-    PlaybackMode mode;
 };

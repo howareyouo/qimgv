@@ -56,17 +56,6 @@
       <key>CFBundleTypeRole</key>
       <string>Viewer</string>
     </dict>
-    <dict>
-      <key>CFBundleTypeExtensions</key>
-      <array>
-        <string>mp4</string>
-        <string>webm</string>
-      </array>
-      <key>CFBundleTypeName</key>
-      <string>Video file</string>
-      <key>CFBundleTypeRole</key>
-      <string>Viewer</string>
-    </dict>
   </array>
 </dict>
 </plist>

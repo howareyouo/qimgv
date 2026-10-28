@@ -75,17 +75,12 @@ void Actions::init() {
     mActions.insert("toggleImageInfo", QVersionNumber(0,7,84));
     mActions.insert("toggleShuffle", QVersionNumber(0,8,3));
     mActions.insert("toggleScalingFilter", QVersionNumber(0,8,3));
-    mActions.insert("toggleMute", QVersionNumber(0,8,7));
-    mActions.insert("volumeUp", QVersionNumber(0,8,7));
-    mActions.insert("volumeDown", QVersionNumber(0,8,7));
     mActions.insert("toggleSlideshow", QVersionNumber(0,8,81));
     mActions.insert("showInDirectory", QVersionNumber(0,8,82));
     mActions.insert("goUp", QVersionNumber(0,9,2));
     mActions.insert("discardEdits", QVersionNumber(0,9,2));
     mActions.insert("nextDirectory", QVersionNumber(0,9,2));
     mActions.insert("prevDirectory", QVersionNumber(0,9,2));
-    mActions.insert("seekVideoForward", QVersionNumber(0,9,2));
-    mActions.insert("seekVideoBackward", QVersionNumber(0,9,2));
     mActions.insert("lockZoom", QVersionNumber(0,9,2));
     mActions.insert("lockView", QVersionNumber(0,9,2));
     mActions.insert("print", QVersionNumber(1,0,0));

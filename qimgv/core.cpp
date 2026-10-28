@@ -172,8 +172,6 @@ void Core::initActions() {
     connect(actionManager, &ActionManager::jumpToLast, this, &Core::jumpToLast);
     connect(actionManager, &ActionManager::runScript, this, &Core::runScript);
     connect(actionManager, &ActionManager::pauseVideo, mw, &MW::pauseVideo);
-    connect(actionManager, &ActionManager::seekVideoForward, mw, &MW::seekVideoForward);
-    connect(actionManager, &ActionManager::seekVideoBackward, mw, &MW::seekVideoBackward);
     connect(actionManager, &ActionManager::frameStep, mw, &MW::frameStep);
     connect(actionManager, &ActionManager::frameStepBack, mw, &MW::frameStepBack);
     connect(actionManager, &ActionManager::folderView, this, &Core::enableFolderView);
@@ -192,9 +190,6 @@ void Core::initActions() {
     connect(actionManager, &ActionManager::toggleShuffle, this, &Core::toggleShuffle);
     connect(actionManager, &ActionManager::toggleScalingFilter, mw, &MW::toggleScalingFilter);
     connect(actionManager, &ActionManager::showInDirectory, this, &Core::showInDirectory);
-    connect(actionManager, &ActionManager::toggleMute, mw, &MW::toggleMute);
-    connect(actionManager, &ActionManager::volumeUp, mw, &MW::volumeUp);
-    connect(actionManager, &ActionManager::volumeDown, mw, &MW::volumeDown);
     connect(actionManager, &ActionManager::toggleSlideshow, this, &Core::toggleSlideshow);
     connect(actionManager, &ActionManager::goUp, this, &Core::loadParentDir);
     connect(actionManager, &ActionManager::discardEdits, this, &Core::discardEdits);
@@ -619,7 +614,7 @@ QMimeData *Core::getMimeDataForImage(std::shared_ptr<Image> img, MimeDataTarget 
     }
     // !!! using setImageData() while doing drag'n'drop hangs Xorg !!!
     // clipboard only!
-    if(img->type() != VIDEO && target == TARGET_CLIPBOARD)
+    if(target == TARGET_CLIPBOARD)
         mimeData->setImageData(*img->getImage().get());
     mimeData->setUrls({QUrl::fromLocalFile(path)});
     return mimeData;
@@ -660,7 +655,7 @@ FileOpResult Core::removeFile(QString filePath, bool trash) {
     std::shared_ptr<Image> img;
     if(state.currentFilePath == filePath) {
         img = model->getImage(filePath);
-        if(img->type() == ANIMATED || img->type() == VIDEO) {
+        if(img->type() == ANIMATED) {
             mw->closeImage();
             reopen = true;
         }
@@ -1428,7 +1423,7 @@ void Core::nextImageSlideshow() {
 
 void Core::startSlideshowTimer() {
     // start timer only for static images or single frame gifs
-    // for proper gifs and video we get a playbackFinished() signal
+    // for proper gifs we get a playbackFinished() signal
     auto img = model->getImage(state.currentFilePath);
     if(img->type() == STATIC) {
         slideshowTimer.start();
@@ -1509,12 +1504,6 @@ void Core::guiSetImage(std::shared_ptr<Image> img) {
     } else if(type == ANIMATED) {
         auto animated = dynamic_cast<ImageAnimated *>(img.get());
         mw->showAnimation(animated->getMovie());
-    } else if(type == VIDEO) {
-        auto video = dynamic_cast<Video *>(img.get());
-        // workaround for mpv. If we play video while mainwindow is hidden we get black screen.
-        // affects only initial startup (e.g. we open webm from file manager)
-        showGui();
-        mw->showVideo(video->filePath());
     }
     img->isEdited() ? mw->showSaveOverlay() : mw->hideSaveOverlay();
     // exif parsing can take a while on big files and it is only needed by the

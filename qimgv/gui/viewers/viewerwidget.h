@@ -3,7 +3,6 @@
 #include "gui/customwidgets/floatingwidgetcontainer.h"
 #include <QVBoxLayout>
 #include "gui/viewers/imageviewerv2.h"
-#include "gui/viewers/videoplayerinitproxy.h"
 #include "gui/overlays/videocontrolsproxy.h"
 #include "gui/overlays/zoomindicatoroverlayproxy.h"
 #include "gui/overlays/clickzoneoverlay.h"
@@ -11,7 +10,6 @@
 
 enum CurrentWidget {
     IMAGEVIEWER,
-    VIDEOPLAYER,
     UNSET
 };
 
@@ -34,18 +32,18 @@ public:
     bool lockZoomEnabled();
     bool lockViewEnabled();
     ScalingFilter scalingFilter();
+    // see ImageViewerV2::setWindowDragEnabled()
+    void setWindowDragEnabled(bool mode);
 
 private:
     QVBoxLayout layout;
     std::unique_ptr<ImageViewerV2> imageViewer;
-    std::unique_ptr<VideoPlayerInitProxy> videoPlayer;
     std::unique_ptr<ContextMenu> contextMenu;
     VideoControlsProxyWrapper *videoControls;
     ZoomIndicatorOverlayProxy *zoomIndicator;
     ClickZoneOverlay *clickZoneOverlay;
 
     void enableImageViewer();
-    void enableVideoPlayer();
 
     CurrentWidget currentWidget;
     bool mInteractionEnabled, mWaylandCursorWorkaround;
@@ -54,7 +52,6 @@ private:
     bool mIsFullscreen;
 
     void disableImageViewer();
-    void disableVideoPlayer();
 
     QRect videoControlsArea();
 
@@ -62,7 +59,6 @@ private:
 
 private slots:
     void onScaleChanged(qreal);
-    void onVideoPlaybackFinished();
     void onAnimationPlaybackFinished();
 
 signals:
@@ -90,7 +86,6 @@ signals:
     void showScriptSettings();
 
 public slots:
-    bool showVideo(QString file);
     void stopPlayback();
     void setFitMode(ImageFitMode mode);
     ImageFitMode fitMode();
@@ -99,17 +94,11 @@ public slots:
     void showCursor();
     void hideCursorTimed(bool restartTimer);
 
-    // video control
+    // playback control
     void pauseResumePlayback();
     void seek(int pos);
-    void seekRelative(int pos);
-    void seekBackward();
-    void seekForward();
     void frameStep();
     void frameStepBack();
-    void toggleMute();
-    void volumeUp();
-    void volumeDown();
 
     void startPlayback();
     void showContextMenu();

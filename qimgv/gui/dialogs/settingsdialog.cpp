@@ -67,13 +67,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     ui->blurBackgroundCheckBox->setEnabled(false);
 #endif
 
-#ifndef USE_MPV
-    ui->videoPlaybackGroup->setEnabled(false);
-    //ui->novideoInfoLabel->setHidden(false);
-#else
-    //ui->novideoInfoLabel->setHidden(true);
-#endif
-
 #ifdef USE_OPENCV
     ui->scalingQualityComboBox->addItem("Bilinear+sharpen (OpenCV)");
     ui->scalingQualityComboBox->addItem("Bicubic (OpenCV)");
@@ -170,9 +163,6 @@ void SettingsDialog::setupSidebar() {
 //------------------------------------------------------------------------------
 void SettingsDialog::readSettings() {
     ui->loopSlideshowCheckBox->setChecked(settings->loopSlideshow());
-    ui->videoPlaybackCheckBox->setChecked(settings->videoPlayback());
-    ui->videoPlaybackGroupContents->setEnabled(settings->videoPlayback());
-    ui->playSoundsCheckBox->setChecked(settings->playVideoSounds());
     ui->enablePanelCheckBox->setChecked(settings->panelEnabled());
     ui->thumbnailPanelGroupContents->setEnabled(settings->panelEnabled());
     ui->panelFullscreenOnlyCheckBox->setChecked(settings->panelFullscreenOnly());
@@ -241,8 +231,6 @@ void SettingsDialog::readSettings() {
         ui->folderEndLoop->setChecked(true);
     else
         ui->folderEndSwitchFolder->setChecked(true);
-
-    ui->mpvLineEdit->setText(settings->mpvBinary());
 
     ui->zoomStepSlider->setValue(static_cast<int>(settings->zoomStep() * 100.f));
     onZoomStepSliderChanged(ui->zoomStepSlider->value());
@@ -320,8 +308,6 @@ void SettingsDialog::saveSettings() {
 
     settings->setLanguage(langs.key(ui->langComboBox->currentText()));
 
-    settings->setVideoPlayback(ui->videoPlaybackCheckBox->isChecked());
-    settings->setPlayVideoSounds(ui->playSoundsCheckBox->isChecked());
     settings->setPanelEnabled(ui->enablePanelCheckBox->isChecked());
     settings->setPanelFullscreenOnly(ui->panelFullscreenOnlyCheckBox->isChecked());
     settings->setSquareThumbnails(ui->squareThumbnailsCheckBox->isChecked());
@@ -377,7 +363,6 @@ void SettingsDialog::saveSettings() {
     else
         settings->setFolderEndAction(FOLDER_END_GOTO_ADJACENT);
 
-    settings->setMpvBinary(ui->mpvLineEdit->text());
     settings->setScalingFilter(static_cast<ScalingFilter>(ui->scalingQualityComboBox->currentIndex()));
     settings->setImageScrolling(static_cast<ImageScrolling>(ui->imageScrollingComboBox->currentIndex()));
     settings->setShowSaveOverlay(ui->saveOverlayCheckBox->isChecked());
@@ -635,15 +620,6 @@ void SettingsDialog::resetShortcuts() {
 //------------------------------------------------------------------------------
 void SettingsDialog::resetZoomLevels() {
     ui->zoomLevels->setText(settings->defaultZoomLevels());
-}
-//------------------------------------------------------------------------------
-void SettingsDialog::selectMpvPath() {
-    QFileDialog dialog;
-    QString file;
-    file = dialog.getOpenFileName(this, tr("Navigate to mpv binary"), "", "mpv*");
-    if(!file.isEmpty()) {
-        ui->mpvLineEdit->setText(file);
-    }
 }
 //------------------------------------------------------------------------------
 void SettingsDialog::onExpandLimitSliderChanged(int value) {

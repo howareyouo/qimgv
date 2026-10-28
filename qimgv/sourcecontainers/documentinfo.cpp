@@ -108,18 +108,12 @@ void DocumentInfo::detectFormat() {
     } else if(mimeName == "image/bmp") {
         mFormat = "bmp";
         mDocumentType = DocumentType::STATIC;
-    } else if(settings->videoPlayback() && settings->videoFormats().contains(mimeName)) {
-        mDocumentType = DocumentType::VIDEO;
-        mFormat = settings->videoFormats().value(mimeName);
     } else {
         // just try to open via suffix if all of the above fails
         mFormat = suffix;
         if(mFormat.compare("jfif", Qt::CaseInsensitive) == 0)
             mFormat = "jpg";
-        if(settings->videoPlayback() && settings->videoFormats().values().contains(suffix))
-            mDocumentType = DocumentType::VIDEO;
-        else
-            mDocumentType = DocumentType::STATIC;
+        mDocumentType = DocumentType::STATIC;
     }
     loadExifOrientation();
 }
@@ -309,7 +303,7 @@ QMap<QString, QString> DocumentInfo::getExifTags() {
 }
 
 void DocumentInfo::loadExifOrientation() {
-    if(mDocumentType == DocumentType::VIDEO || mDocumentType == DocumentType::NONE)
+    if(mDocumentType == DocumentType::NONE)
         return;
 
     QString path = filePath();

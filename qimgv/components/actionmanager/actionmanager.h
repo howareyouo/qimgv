@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <QObject>
 #include <QKeyEvent>
@@ -92,8 +92,6 @@ signals:
     void documentView();
     void runScript(const QString&);
     void pauseVideo();
-    void seekVideoForward();
-    void seekVideoBackward();
     void frameStep();
     void frameStepBack();
     void toggleFolderView();
@@ -111,9 +109,6 @@ signals:
     void toggleShuffle();
     void toggleScalingFilter();
     void showInDirectory();
-    void toggleMute();
-    void volumeUp();
-    void volumeDown();
     void toggleSlideshow();
     void discardEdits();
     void goUp();

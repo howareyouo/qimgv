@@ -38,7 +38,6 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-qt5-translations \
     mingw-w64-ucrt-x86_64-qt5-imageformats \
     mingw-w64-ucrt-x86_64-exiv2 \
-    mingw-w64-ucrt-x86_64-mpv \
     mingw-w64-ucrt-x86_64-opencv \
     mingw-w64-ucrt-x86_64-libjxl \
     mingw-w64-ucrt-x86_64-libavif \
@@ -61,7 +60,6 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$PREFIX" \
     -DOPENCV_SUPPORT=ON \
-    -DVIDEO_SUPPORT=ON \
     -DCMAKE_CXX_FLAGS="$CFL" \
     -DCMAKE_EXE_LINKER_FLAGS="$LDFL"
 ninja -C "$BUILD_DIR"
@@ -142,8 +140,6 @@ test -f "$BUILD_DIR/qimgv/qimgv.exe" || { echo "ERROR: qimgv.exe was not built" 
 
 # 1 - qimgv itself
 cp "$BUILD_DIR/qimgv/qimgv.exe" "$PACKAGE_DIR/"
-mkdir -p "$PACKAGE_DIR/plugins"
-cp "$BUILD_DIR/plugins/player_mpv/player_mpv.dll" "$PACKAGE_DIR/plugins/"
 cp -r "$BUILD_DIR/qimgv/translations" "$PACKAGE_DIR/"
 
 # 2 - Qt plugins + translations
@@ -172,14 +168,11 @@ copy_plugin qapng.dll "$EXT_DIR/QtApng"
 copy_plugin libqheif.dll "$EXT_DIR/qt-heif-image-plugin"
 copy_plugin qtraw.dll "$EXT_DIR/qtraw"
 
-# 4 - mpv command line binary
-cp "$PREFIX/bin/mpv.exe" "$PACKAGE_DIR/"
-
-# 5 - misc
+# 4 - misc
 mkdir -p "$PACKAGE_DIR/cache" "$PACKAGE_DIR/conf" "$PACKAGE_DIR/thumbnails"
 cp -r "$SRC_DIR/qimgv/distrib/mimedata/data" "$PACKAGE_DIR/"
 
-# 6 - runtime DLLs: walk the dependency graph with ldd instead of a fixed list
+# 5 - runtime DLLs: walk the dependency graph with ldd instead of a fixed list
 collect_ucrt_dlls() {
     local queue=("$@")
     local seen=" "

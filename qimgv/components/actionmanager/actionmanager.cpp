@@ -66,8 +66,6 @@ void ActionManager::initDefaults() {
     actionManager->defaults.insert("M", "moveFile");
     actionManager->defaults.insert("Home", "jumpToFirst");
     actionManager->defaults.insert("End", "jumpToLast");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Right", "seekVideoForward");
-    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Left", "seekVideoBackward");
     actionManager->defaults.insert(",", "frameStepBack");
     actionManager->defaults.insert(".", "frameStep");
     actionManager->defaults.insert("Enter", "folderView");

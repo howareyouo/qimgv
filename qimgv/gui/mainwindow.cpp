@@ -59,8 +59,8 @@ MW::~MW() {
 }
 
 /*                                                             |--[ImageViewer]
- *                        |--[DocumentWidget]--[ViewerWidget]--|
- * [MW]--[CentralWidget]--|                                    |--[VideoPlayer]
+ *                        |--[DocumentWidget]--[ViewerWidget]--[ImageViewer]
+ * [MW]--[CentralWidget]--|
  *                        |--[FolderView]
  *
  *  (not counting floating widgets)
@@ -99,13 +99,8 @@ void MW::setupUi() {
     connect(this, &MW::scrollRight, viewerWidget.get(), &ViewerWidget::scrollRight);
     connect(this, &MW::pauseVideo,     viewerWidget.get(), &ViewerWidget::pauseResumePlayback);
     connect(this, &MW::stopPlayback,   viewerWidget.get(), &ViewerWidget::stopPlayback);
-    connect(this, &MW::seekVideoForward, viewerWidget.get(), &ViewerWidget::seekForward);
-    connect(this, &MW::seekVideoBackward,  viewerWidget.get(), &ViewerWidget::seekBackward);
     connect(this, &MW::frameStep,      viewerWidget.get(), &ViewerWidget::frameStep);
     connect(this, &MW::frameStepBack,  viewerWidget.get(), &ViewerWidget::frameStepBack);
-    connect(this, &MW::toggleMute,  viewerWidget.get(), &ViewerWidget::toggleMute);
-    connect(this, &MW::volumeUp,  viewerWidget.get(), &ViewerWidget::volumeUp);
-    connect(this, &MW::volumeDown,  viewerWidget.get(), &ViewerWidget::volumeDown);
     connect(this, &MW::toggleTransparencyGrid, viewerWidget.get(), &ViewerWidget::toggleTransparencyGrid);
     connect(this, &MW::setLoopPlayback,  viewerWidget.get(), &ViewerWidget::setLoopPlayback);
 }
@@ -269,12 +264,6 @@ void MW::showAnimation(std::shared_ptr<QMovie> movie) {
         preShowResize(movie->frameRect().size());
     viewerWidget->showAnimation(movie);
     updateCropPanelData();
-}
-
-void MW::showVideo(QString file) {
-    if(settings->autoResizeWindow())
-        preShowResize(QSize()); // tmp. find a way to get this though mpv BEFORE playback
-    viewerWidget->showVideo(file);
 }
 
 void MW::showContextMenu() {
@@ -453,8 +442,10 @@ void MW::mouseMoveEvent(QMouseEvent *event) {
 bool MW::event(QEvent *event) {
     // only save maximized state if we are already visible
     // this filter out out events while the window is still being set up
-    if(event->type() == QEvent::WindowStateChange && this->isVisible() && !this->isFullScreen())
+    if(event->type() == QEvent::WindowStateChange && this->isVisible() && !this->isFullScreen()) {
         maximized = isMaximized();
+        updateWindowDragEnabled();
+    }
     if(event->type() == QEvent::Move || event->type() == QEvent::Resize)
         windowGeometryChangeTimer.start();
     return QWidget::event(event);
@@ -994,6 +985,12 @@ void MW::applyFramelessWindow(bool mode) {
         else
             QWidget::show();
     }
+    updateWindowDragEnabled();
+}
+
+void MW::updateWindowDragEnabled() {
+    if(viewerWidget)
+        viewerWidget->setWindowDragEnabled(isFramelessActive());
 }
 
 bool MW::eventFilter(QObject *obj, QEvent *event) {
@@ -1113,6 +1110,7 @@ void MW::adaptToWindowState() {
     folderView->onFullscreenModeChanged(isFullScreen());
     docWidget->onFullscreenModeChanged(isFullScreen());
     viewerWidget->onFullscreenModeChanged(isFullScreen());
+    updateWindowDragEnabled();
 }
 
 void MW::paintEvent(QPaintEvent *event) {

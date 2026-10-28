@@ -67,8 +67,6 @@ target_sources(qimgv PRIVATE
 
     viewers/documentwidget.cpp
     viewers/imageviewerv2.cpp
-    viewers/videoplayer.cpp
-    viewers/videoplayerinitproxy.cpp
     viewers/viewerwidget.cpp
 
     folderview/foldergridview.cpp

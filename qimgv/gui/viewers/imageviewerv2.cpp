@@ -1,5 +1,13 @@
 #include "imageviewerv2.h"
 
+static QPoint mouseGlobalPos(const QMouseEvent *event) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return event->globalPosition().toPoint();
+#else
+    return event->globalPos();
+#endif
+}
+
 ImageViewerV2::ImageViewerV2(QWidget *parent) : QGraphicsView(parent),
     pixmap(nullptr),
     pixmapScaled(nullptr),
@@ -202,6 +210,10 @@ void ImageViewerV2::enableDrags() {
 
 void ImageViewerV2::disableDrags() {
     dragsEnabled = false;
+}
+
+void ImageViewerV2::setWindowDragEnabled(bool mode) {
+    windowDragEnabled = mode;
 }
 
 void ImageViewerV2::onAnimationTimer() {
@@ -541,14 +553,28 @@ void ImageViewerV2::mouseMoveEvent(QMouseEvent *event) {
                     setCursor(Qt::ClosedHandCursor);
             }
         }
-        // emit a signal to start dnd; set flag to ignore further mouse move events
+        // emit a signal to start dnd / start moving the window once the drag
+        // threshold is exceeded
         if(mouseInteraction == MouseInteractionState::MOUSE_DRAG_BEGIN) {
             if( (abs(mousePressPos.x() - event->pos().x()) > dragThreshold) ||
                  abs(mousePressPos.y() - event->pos().y()) > dragThreshold)
             {
-                mouseInteraction = MouseInteractionState::MOUSE_NONE;
-                emit draggedOut();
+                // when the frameless window is active, dragging the image area
+                // moves the whole window instead of dragging the file out;
+                // ctrl+left is kept for the drag'n'drop
+                if(windowDragEnabled && !(event->modifiers() & Qt::ControlModifier)) {
+                    mouseInteraction = MouseInteractionState::MOUSE_WINDOW_MOVE;
+                    windowMoveStartGlobalPos = mouseGlobalPos(event);
+                    windowMoveStartWindowPos = window()->geometry().topLeft();
+                } else {
+                    mouseInteraction = MouseInteractionState::MOUSE_NONE;
+                    emit draggedOut();
+                }
             }
+        }
+        // moving the whole window
+        if(mouseInteraction == MouseInteractionState::MOUSE_WINDOW_MOVE) {
+            mouseMoveWindow(event);
         }
         // panning
         if(mouseInteraction == MouseInteractionState::MOUSE_PAN) {
@@ -715,6 +741,15 @@ void ImageViewerV2::mousePan(QMouseEvent *event) {
     scroll(mouseMoveStartPos.x(), mouseMoveStartPos.y(), false);
     mouseMoveStartPos = event->pos();
     saveViewportPos();
+}
+
+// moves the whole top-level window, used when the image is not zoomed in and
+// the frameless window is active (no title bar to drag)
+void ImageViewerV2::mouseMoveWindow(QMouseEvent *event) {
+    QWidget *topLevel = window();
+    if(!topLevel)
+        return;
+    topLevel->move(windowMoveStartWindowPos + (mouseGlobalPos(event) - windowMoveStartGlobalPos));
 }
 
 //  zooming while the right button is pressed

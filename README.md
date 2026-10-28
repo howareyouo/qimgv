@@ -2,7 +2,7 @@
 
 qimgv | Current version: 1.0.2
 =====
-Image viewer. Fast, easy to use. Optional video support.
+Image viewer. Fast, easy to use.
 
 ## Screenshots
 
@@ -25,8 +25,6 @@ Main window & panel        |  Folder view   |  Settings window
 - Basic image editing: Crop, Rotate and Resize
 
 - Ability to quickly copy / move images to different folders
-
-- Experimental video playback via libmpv
 
 - Folder view mode
 
@@ -137,8 +135,6 @@ qimgv can open some extra formats via third-party image plugins. All of them are
 ## Windows
   
   Windows builds are portable (everything is contained within the install folder). The installer also sets up file associations.
-  
-  _NOTE: `-video` variants include mpv for video support_
   
   Grab the latest version from the [releases page](https://github.com/easymodo/qimgv/releases)
 

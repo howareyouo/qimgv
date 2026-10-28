@@ -7,5 +7,4 @@ target_sources(qimgv PRIVATE
     imageanimated.cpp
     imagestatic.cpp
     thumbnail.cpp
-    video.cpp
 )
