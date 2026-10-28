@@ -31,6 +31,7 @@ ViewerWidget::ViewerWidget(QWidget *parent)
     imageViewer->hide();
 
     connect(imageViewer.get(), &ImageViewerV2::scalingRequested, this, &ViewerWidget::scalingRequested);
+    connect(imageViewer.get(), &ImageViewerV2::scaleChanged, this, &ViewerWidget::zoomChanged);
     connect(imageViewer.get(), &ImageViewerV2::scaleChanged, this, &ViewerWidget::onScaleChanged);
     connect(imageViewer.get(), &ImageViewerV2::playbackFinished, this, &ViewerWidget::onAnimationPlaybackFinished);
     connect(this, &ViewerWidget::toggleTransparencyGrid, imageViewer.get(), &ImageViewerV2::toggleTransparencyGrid);

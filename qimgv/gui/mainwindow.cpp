@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+#include <QScreen>
+
 // TODO: nuke this and rewrite
 
 MW::MW(QWidget *parent)
@@ -15,7 +17,10 @@ MW::MW(QWidget *parent)
       floatingMessage(nullptr),
       cropPanel(nullptr),
       cropOverlay(nullptr),
-      framelessDragMode(FRAMELESS_DRAG_NONE)
+      framelessDragMode(FRAMELESS_DRAG_NONE),
+      lastZoomScale(-1.0),
+      zoomResizeGuard(false),
+      imageLoading(false)
 {
     setAttribute(Qt::WA_TranslucentBackground, true);
     layout.setContentsMargins(0,0,0,0);
@@ -86,6 +91,7 @@ void MW::setupUi() {
     imageInfoOverlay = new ImageInfoOverlayProxy(viewerWidget.get());
     floatingMessage = new FloatingMessageProxy(viewerWidget.get()); // todo: use additional one for folderview?
     connect(viewerWidget.get(), &ViewerWidget::scalingRequested, this, &MW::scalingRequested);
+    connect(viewerWidget.get(), &ViewerWidget::zoomChanged, this, &MW::onZoomChanged);
     connect(viewerWidget.get(), &ViewerWidget::draggedOut, this, qOverload<>(&MW::draggedOut));
     connect(viewerWidget.get(), &ViewerWidget::playbackFinished, this, &MW::playbackFinished);
     connect(viewerWidget.get(), &ViewerWidget::showScriptSettings, this, &MW::showScriptSettings);
@@ -221,6 +227,7 @@ void MW::switchFitMode() {
 void MW::closeImage() {
     info.fileName = "";
     info.filePath = "";
+    lastZoomScale = -1.0;
     viewerWidget->closeImage();
 }
 
@@ -252,17 +259,83 @@ void MW::preShowResize(QSize sz) {
     qApp->processEvents(); // not needed anymore with patched qt?
 }
 
+// grows the window together with the image while zooming in,
+// keeping the image aspect ratio, until width or height reaches
+// the screen edge
+void MW::onZoomChanged(qreal scale) {
+    if(zoomResizeGuard || imageLoading || !isVisible())
+        return;
+    // react to zooming in only; zooming out never shrinks the window
+    bool zoomedIn = (lastZoomScale >= 0.0f && scale > lastZoomScale + 0.0001f);
+    lastZoomScale = scale;
+    if(!zoomedIn || windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
+        return;
+    QSize imageSz = viewerWidget->imageRect().size();
+    // defer so the zoom operation finishes with the current geometry first,
+    // otherwise the viewport center it uses becomes stale
+    QTimer::singleShot(0, this, [this, imageSz]() {
+        growWindowForZoom(imageSz);
+    });
+}
+
+void MW::growWindowForZoom(QSize imageSz) {
+    if(imageSz.isEmpty() || zoomResizeGuard || imageLoading || !isVisible())
+        return;
+    if(windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
+        return;
+    QScreen *screen = QGuiApplication::screenAt(frameGeometry().center());
+    if(!screen && currentDisplay >= 0 && currentDisplay < qApp->screens().count())
+        screen = qApp->screens().at(currentDisplay);
+    if(!screen)
+        return;
+    QRect availableGeom = screen->availableGeometry();
+    // window frame overhead (title bar etc.) and any client space not taken by the viewer
+    QSize frameExtra(frameGeometry().width() - width(), frameGeometry().height() - height());
+    QSize clientOverhead = size() - viewerWidget->size();
+    // cap the image size at the screen edge, keeping its aspect ratio
+    QSize maxImageSz(availableGeom.width() - frameExtra.width() - clientOverhead.width(),
+                     availableGeom.height() - frameExtra.height() - clientOverhead.height());
+    maxImageSz = QSize(qMax(maxImageSz.width(), 1), qMax(maxImageSz.height(), 1));
+    if(imageSz.width() > maxImageSz.width() || imageSz.height() > maxImageSz.height())
+        imageSz.scale(maxImageSz, Qt::KeepAspectRatio);
+    QSize target = imageSz + clientOverhead;
+    // only grow, never shrink
+    QSize current = size();
+    target = QSize(qMax(target.width(), current.width()),
+                   qMax(target.height(), current.height()));
+    if(target == current)
+        return;
+    // keep the top-left corner in place, but keep the window on screen
+    int frameLeft = geometry().x() - frameGeometry().x();
+    int frameTop  = geometry().y() - frameGeometry().y();
+    QRect newFrame(frameGeometry().topLeft(), target + frameExtra);
+    if(newFrame.right() > availableGeom.right())
+        newFrame.moveRight(availableGeom.right());
+    if(newFrame.bottom() > availableGeom.bottom())
+        newFrame.moveBottom(availableGeom.bottom());
+
+    zoomResizeGuard = true;
+    setGeometry(QRect(newFrame.topLeft() + QPoint(frameLeft, frameTop), target));
+    zoomResizeGuard = false;
+}
+
 void MW::showImage(std::unique_ptr<QPixmap> pixmap) {
+    imageLoading = true;
     if(settings->autoResizeWindow())
         preShowResize(pixmap->size());
     viewerWidget->showImage(std::move(pixmap));
+    imageLoading = false;
+    lastZoomScale = viewerWidget->currentScale();
     updateCropPanelData();
 }
 
 void MW::showAnimation(std::shared_ptr<QMovie> movie) {
+    imageLoading = true;
     if(settings->autoResizeWindow())
         preShowResize(movie->frameRect().size());
-    viewerWidget->showAnimation(movie);
+    viewerWidget->showAnimation(std::move(movie));
+    imageLoading = false;
+    lastZoomScale = viewerWidget->currentScale();
     updateCropPanelData();
 }
 

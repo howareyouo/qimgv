@@ -63,6 +63,7 @@ private slots:
 
 signals:
     void scalingRequested(QSize, ScalingFilter);
+    void zoomChanged(qreal scale);
     void zoomIn();
     void zoomOut();
     void zoomInCursor();
