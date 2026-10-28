@@ -28,7 +28,7 @@ mkdir -p "$BUILD_DIR"
 # ------------------------------------------------------------------------------
 echo "INSTALLING UCRT64 BUILD DEPS"
 pacman -S --noconfirm --needed \
-    git p7zip ninja mingw-w64-ucrt-x86_64-cmake-bootstrap \
+    git p7zip mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja \
     mingw-w64-ucrt-x86_64-gcc \
     mingw-w64-ucrt-x86_64-make \
     mingw-w64-ucrt-x86_64-pkgconf \
