@@ -104,6 +104,13 @@ void ActionManager::adjustFromVersion(QVersionNumber lastVer) {
         }
         shortcuts = swapped;
     }
+    // F11 now toggles frameless window instead of fullscreen
+    if(lastVer < QVersionNumber(1,0,4)) {
+        if(actionForShortcut("F11") == "toggleFullscreen") {
+            actionManager->resetDefaults("toggleFullscreen");
+            actionManager->resetDefaults("toggleFramelessWindow");
+        }
+    }
     // add default shortcuts of actions introduced after the config was written
     for(const ActionSpec &spec : ActionTable::all()) {
         if(spec.introduced <= lastVer)

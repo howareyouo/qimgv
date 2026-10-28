@@ -18,8 +18,8 @@ private slots:
 };
 
 void Test_ActionTable::actionCount() {
-    QCOMPARE(ActionTable::all().size(), 64);
-    QCOMPARE(ActionTable::names().size(), 64);
+    QCOMPARE(ActionTable::all().size(), 65);
+    QCOMPARE(ActionTable::names().size(), 65);
 }
 
 void Test_ActionTable::namesAreUnique() {
@@ -63,7 +63,7 @@ void Test_ActionTable::knownDefaultBindings() {
     const QMap<QString, QString> &defaults = ActionTable::defaultShortcuts();
     QCOMPARE(defaults.value("Space"), QString("toggleFitMode"));
     QCOMPARE(defaults.value("Del"), QString("moveToTrash"));
-    QCOMPARE(defaults.value("F11"), QString("toggleFullscreen"));
+    QCOMPARE(defaults.value("F11"), QString("toggleFramelessWindow"));
     QCOMPARE(defaults.value("WheelUp"), QString("prevImage"));
     QCOMPARE(defaults.value("WheelDown"), QString("nextImage"));
     QCOMPARE(defaults.value("XButton1"), QString("prevImage"));

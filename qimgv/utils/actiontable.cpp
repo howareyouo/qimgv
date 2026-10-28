@@ -20,8 +20,10 @@ const QList<ActionSpec> &buildTable() {
         }},
         {"toggleFullscreen", QVersionNumber(0,6,2), {
             "F",
-            "F11",
             "LMB_DoubleClick",
+        }},
+        {"toggleFramelessWindow", QVersionNumber(1,0,4), {
+            "F11",
         }},
         {"fitWindow", QVersionNumber(0,6,2), {
             "1",

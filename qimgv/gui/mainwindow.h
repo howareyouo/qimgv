@@ -242,6 +242,7 @@ public slots:
     void showResizeDialog(QSize initialSize);
     void showSettings();
     void triggerFullScreen();
+    void toggleFramelessWindow();
     void showMessageDirectory(QString dirName);
     void showMessageDirectoryEnd();
     void showMessageDirectoryStart();

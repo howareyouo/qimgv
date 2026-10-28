@@ -141,6 +141,7 @@ void Core::initActions() {
     actionManager->registerHandler("fitWindowStretch", [this]{ mw->fitWindowStretch(); });
     actionManager->registerHandler("toggleFitMode",    [this]{ mw->switchFitMode(); });
     actionManager->registerHandler("toggleFullscreen", [this]{ mw->triggerFullScreen(); });
+    actionManager->registerHandler("toggleFramelessWindow", [this]{ mw->toggleFramelessWindow(); });
     actionManager->registerHandler("lockZoom",         [this]{ mw->toggleLockZoom(); });
     actionManager->registerHandler("lockView",         [this]{ mw->toggleLockView(); });
     actionManager->registerHandler("zoomIn",           [this]{ mw->zoomIn(); });
