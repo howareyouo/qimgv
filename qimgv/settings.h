@@ -275,6 +275,8 @@ public:
     void setAbsoluteZoomStep(bool mode);
     bool autoResizeWindow();
     void setAutoResizeWindow(bool mode);
+    bool framelessWindow();
+    void setFramelessWindow(bool mode);
     int autoResizeLimit();
     void setAutoResizeLimit(int percent);
 

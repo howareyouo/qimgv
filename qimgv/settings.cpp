@@ -1094,6 +1094,14 @@ void Settings::setAutoResizeWindow(bool mode) {
     settings->settingsConf->setValue("autoResizeWindow", mode);
 }
 //------------------------------------------------------------------------------
+bool Settings::framelessWindow() {
+    return settingsConf->value("framelessWindow", false).toBool();
+}
+
+void Settings::setFramelessWindow(bool mode) {
+    settingsConf->setValue("framelessWindow", mode);
+}
+//------------------------------------------------------------------------------
 int Settings::autoResizeLimit() {
     int limit = settings->settingsConf->value("autoResizeLimit", 90).toInt();
     if(limit < 30 || limit > 100)

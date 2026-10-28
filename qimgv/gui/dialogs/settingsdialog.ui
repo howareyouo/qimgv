@@ -607,6 +607,17 @@
                         </property>
                        </widget>
                       </item>
+                      <item row="2" column="1">
+                       <widget class="QCheckBox" name="framelessWindowCheckBox">
+                        <property name="toolTip">
+                         <string>Hides the window title bar and border.
+Drag the window with Alt + left mouse button, resize it by dragging its edges.</string>
+                        </property>
+                        <property name="text">
+                         <string>Frameless window</string>
+                        </property>
+                       </widget>
+                      </item>
                       <item row="0" column="2">
                        <spacer name="horizontalSpacer_20">
                         <property name="orientation">

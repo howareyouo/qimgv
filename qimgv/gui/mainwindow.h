@@ -66,6 +66,7 @@ class MW : public FloatingWidgetContainer
     Q_OBJECT
 public:
     explicit MW(QWidget *parent = nullptr);
+    ~MW() override;
     bool isCropPanelActive();
     void onScalingFinished(std::unique_ptr<QPixmap>scaled);
     void showImage(std::unique_ptr<QPixmap> pixmap);
@@ -121,6 +122,21 @@ private:
     void saveCurrentDisplay();
     void setupUi();
 
+    // frameless window: no native title bar / border, so moving and resizing
+    // has to be handled manually (see eventFilter())
+    enum FramelessDragMode {
+        FRAMELESS_DRAG_NONE,
+        FRAMELESS_DRAG_MOVE,
+        FRAMELESS_DRAG_RESIZE
+    };
+    FramelessDragMode framelessDragMode;
+    Qt::Edges framelessResizeEdges;
+    QPoint framelessPressPos;
+    QRect framelessStartGeometry;
+    bool isFramelessActive() const;
+    Qt::Edges framelessEdgesAt(const QPoint &windowPos) const;
+    void applyFramelessWindow(bool mode);
+
     void applyWindowedBackground();
     void applyFullscreenBackground();
     void mouseDoubleClickEvent(QMouseEvent *event);
@@ -141,6 +157,7 @@ private slots:
     void showScriptSettings();
 
 protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event);
     bool event(QEvent *event);
     void paintEvent(QPaintEvent *event);

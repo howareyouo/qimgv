@@ -225,6 +225,7 @@ void SettingsDialog::readSettings() {
         ui->thumbStyleExtended->setChecked(true);
     ui->animatedJxlCheckBox->setChecked(settings->jxlAnimation());
     ui->autoResizeWindowCheckBox->setChecked(settings->autoResizeWindow());
+    ui->framelessWindowCheckBox->setChecked(settings->framelessWindow());
     ui->panelCenterSelectionCheckBox->setChecked(settings->panelCenterSelection());
     ui->useFixedZoomLevelsCheckBox->setChecked(settings->useFixedZoomLevels());
     ui->zoomLevels->setText(settings->zoomLevels());
@@ -387,6 +388,7 @@ void SettingsDialog::saveSettings() {
         settings->setThumbPanelStyle(TH_PANEL_EXTENDED);
     settings->setJxlAnimation(ui->animatedJxlCheckBox->isChecked());
     settings->setAutoResizeWindow(ui->autoResizeWindowCheckBox->isChecked());
+    settings->setFramelessWindow(ui->framelessWindowCheckBox->isChecked());
     settings->setPanelCenterSelection(ui->panelCenterSelectionCheckBox->isChecked());
     settings->setUseFixedZoomLevels(ui->useFixedZoomLevelsCheckBox->isChecked());
     settings->setZoomLevels(ui->zoomLevels->text());

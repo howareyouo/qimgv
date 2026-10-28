@@ -14,7 +14,8 @@ MW::MW(QWidget *parent)
       imageInfoOverlay(nullptr),
       floatingMessage(nullptr),
       cropPanel(nullptr),
-      cropOverlay(nullptr)
+      cropOverlay(nullptr),
+      framelessDragMode(FRAMELESS_DRAG_NONE)
 {
     setAttribute(Qt::WA_TranslucentBackground, true);
     layout.setContentsMargins(0,0,0,0);
@@ -42,11 +43,19 @@ MW::MW(QWidget *parent)
     connect(settings, &Settings::settingsChanged, this, &MW::readSettings);
     connect(&windowGeometryChangeTimer, &QTimer::timeout, this, &MW::onWindowGeometryChanged);
     connect(this, &MW::fullscreenStateChanged, this, &MW::adaptToWindowState);
-
+    // frameless window has no native title bar, catch mouse events on all
+    // widgets to implement moving / resizing by hand
+    qApp->installEventFilter(this);
     readSettings();
     currentDisplay = settings->lastDisplay();
     maximized = settings->maximizedWindow();
+    if(settings->framelessWindow())
+        applyFramelessWindow(true);
     restoreWindowGeometry();
+}
+
+MW::~MW() {
+    qApp->removeEventFilter(this);
 }
 
 /*                                                             |--[ImageViewer]
@@ -618,6 +627,9 @@ void MW::showSettings() {
     docWidget->hideFloatingPanel();
     SettingsDialog settingsDialog(this);
     settingsDialog.exec();
+    // apply after the dialog is closed, changing window flags hides the window
+    // (and the dialog with it)
+    applyFramelessWindow(settings->framelessWindow());
 }
 
 void MW::showScriptSettings() {
@@ -625,6 +637,7 @@ void MW::showScriptSettings() {
     SettingsDialog settingsDialog(this);
     settingsDialog.switchToPage(4);
     settingsDialog.exec();
+    applyFramelessWindow(settings->framelessWindow());
 }
 
 void MW::triggerFullScreen() {
@@ -930,6 +943,122 @@ void MW::readSettings() {
     showInfoBarFullscreen = settings->infoBarFullscreen();
     showInfoBarWindowed = settings->infoBarWindowed();
     adaptToWindowState();
+}
+
+// ------------------------------------------------------- frameless window ---
+// FramelessWindowHint removes the native title bar and border together with
+// everything they provide, so moving and resizing is done by hand:
+// alt + left mouse button drags the window, dragging its edges resizes it.
+
+static const int FRAMELESS_RESIZE_MARGIN = 6;
+
+static QPoint mouseGlobalPos(const QMouseEvent *event) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return event->globalPosition().toPoint();
+#else
+    return event->globalPos();
+#endif
+}
+
+bool MW::isFramelessActive() const {
+    return windowFlags().testFlag(Qt::FramelessWindowHint)
+           && !isFullScreen()
+           && !maximized;
+}
+
+Qt::Edges MW::framelessEdgesAt(const QPoint &pos) const {
+    Qt::Edges edges;
+    if(pos.x() < FRAMELESS_RESIZE_MARGIN)
+        edges |= Qt::LeftEdge;
+    else if(pos.x() > width() - FRAMELESS_RESIZE_MARGIN)
+        edges |= Qt::RightEdge;
+    if(pos.y() < FRAMELESS_RESIZE_MARGIN)
+        edges |= Qt::TopEdge;
+    else if(pos.y() > height() - FRAMELESS_RESIZE_MARGIN)
+        edges |= Qt::BottomEdge;
+    return edges;
+}
+
+void MW::applyFramelessWindow(bool mode) {
+    if(windowFlags().testFlag(Qt::FramelessWindowHint) == mode)
+        return;
+    bool wasVisible = isVisible();
+    bool wasFullScreen = this->isFullScreen();
+    setWindowFlag(Qt::FramelessWindowHint, mode);
+    // setWindowFlag() hides the window
+    if(wasVisible) {
+        if(wasFullScreen)
+            QWidget::showFullScreen();
+        else if(maximized)
+            QWidget::showMaximized();
+        else
+            QWidget::show();
+    }
+}
+
+bool MW::eventFilter(QObject *obj, QEvent *event) {
+    const QEvent::Type type = event->type();
+    if(type != QEvent::MouseButtonPress
+       && type != QEvent::MouseMove
+       && type != QEvent::MouseButtonRelease)
+        return false;
+    if(!isFramelessActive())
+        return false;
+    QWidget *widget = qobject_cast<QWidget*>(obj);
+    if(!widget || widget->window() != this)
+        return false;
+
+    QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+
+    if(type == QEvent::MouseButtonPress) {
+        if(mouseEvent->button() != Qt::LeftButton)
+            return false;
+        if(mouseEvent->modifiers() == Qt::AltModifier) {
+            framelessDragMode = FRAMELESS_DRAG_MOVE;
+        } else {
+            Qt::Edges edges = framelessEdgesAt(mapFromGlobal(mouseGlobalPos(mouseEvent)));
+            if(!edges)
+                return false;
+            framelessDragMode = FRAMELESS_DRAG_RESIZE;
+            framelessResizeEdges = edges;
+        }
+        framelessPressPos = mouseGlobalPos(mouseEvent);
+        framelessStartGeometry = geometry();
+        // do not pass the click to the widget under the cursor
+        return true;
+    }
+
+    if(framelessDragMode == FRAMELESS_DRAG_NONE)
+        return false;
+
+    if(type == QEvent::MouseButtonRelease) {
+        framelessDragMode = FRAMELESS_DRAG_NONE;
+        return true;
+    }
+
+    if(!(mouseEvent->buttons() & Qt::LeftButton)) {
+        framelessDragMode = FRAMELESS_DRAG_NONE;
+        return false;
+    }
+
+    QPoint delta = mouseGlobalPos(mouseEvent) - framelessPressPos;
+    if(framelessDragMode == FRAMELESS_DRAG_MOVE) {
+        move(framelessStartGeometry.topLeft() + delta);
+    } else {
+        QRect newGeometry = framelessStartGeometry;
+        const int minWidth = qMax(minimumWidth(), 100);
+        const int minHeight = qMax(minimumHeight(), 100);
+        if(framelessResizeEdges & Qt::LeftEdge)
+            newGeometry.setLeft(qMin(newGeometry.left() + delta.x(), newGeometry.right() - minWidth));
+        else if(framelessResizeEdges & Qt::RightEdge)
+            newGeometry.setRight(qMax(newGeometry.right() + delta.x(), newGeometry.left() + minWidth));
+        if(framelessResizeEdges & Qt::TopEdge)
+            newGeometry.setTop(qMin(newGeometry.top() + delta.y(), newGeometry.bottom() - minHeight));
+        else if(framelessResizeEdges & Qt::BottomEdge)
+            newGeometry.setBottom(qMax(newGeometry.bottom() + delta.y(), newGeometry.top() + minHeight));
+        setGeometry(newGeometry);
+    }
+    return true;
 }
 
 // todo: remove/rename?
