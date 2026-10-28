@@ -55,7 +55,7 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-dav1d \
     mingw-w64-ucrt-x86_64-zlib \
     mingw-w64-ucrt-x86_64-libiconv \
-    mingw-w64-ucrt-x86_64-inih
+    mingw-w64-ucrt-x86_64-libinih
 
 # Native cmake + pkg-config need Windows-style paths; a few .pc files hardcode
 # the POSIX prefix which cmake would otherwise report as a non-existent path.
