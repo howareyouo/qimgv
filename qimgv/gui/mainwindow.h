@@ -8,6 +8,7 @@
 #include <QFileDialog>
 #include <QMimeData>
 #include <QImageWriter>
+#include <QPointer>
 #include <QWindow>
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
@@ -135,6 +136,13 @@ private:
     bool isFramelessActive() const;
     Qt::Edges framelessEdgesAt(const QPoint &windowPos) const;
     void applyFramelessWindow(bool mode);
+    // resize cursor feedback for the resize margins
+    QPointer<QWidget> framelessCursorWidget;
+    Qt::Edges framelessCursorEdges;
+    void updateFramelessCursor(QWidget *widget, Qt::Edges edges);
+    void resetFramelessCursor();
+    // widgets have to report hovering for the margins to react before a click
+    void enableFramelessMouseTracking();
     // lets the image viewer move the window by dragging the image area
     // (when the frameless window is active and the image is not zoomed in)
     void updateWindowDragEnabled();

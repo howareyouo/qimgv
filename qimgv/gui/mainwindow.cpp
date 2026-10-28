@@ -989,12 +989,68 @@ void MW::applyFramelessWindow(bool mode) {
 }
 
 void MW::updateWindowDragEnabled() {
+    const bool frameless = isFramelessActive();
     if(viewerWidget)
-        viewerWidget->setWindowDragEnabled(isFramelessActive());
+        viewerWidget->setWindowDragEnabled(frameless);
+    if(!frameless) {
+        resetFramelessCursor();
+        return;
+    }
+    // child widgets only report hovering with mouse tracking enabled, and the
+    // cursor is what tells the user that the edges can be dragged
+    enableFramelessMouseTracking();
+}
+
+static Qt::CursorShape framelessCursorForEdges(Qt::Edges edges) {
+    const bool top = edges & Qt::TopEdge;
+    const bool bottom = edges & Qt::BottomEdge;
+    const bool left = edges & Qt::LeftEdge;
+    const bool horizontal = left || (edges & Qt::RightEdge);
+    if((top && left) || (bottom && (edges & Qt::RightEdge)))
+        return Qt::SizeFDiagCursor;
+    if((top && (edges & Qt::RightEdge)) || (bottom && left))
+        return Qt::SizeBDiagCursor;
+    if(horizontal)
+        return Qt::SizeHorCursor;
+    return Qt::SizeVerCursor;
+}
+
+// The cursor has to be set on the widget under the pointer: most children set
+// their own cursor (e.g. the image viewer), which would hide it otherwise
+void MW::updateFramelessCursor(QWidget *widget, Qt::Edges edges) {
+    if(framelessCursorWidget.data() == widget && framelessCursorEdges == edges)
+        return;
+    resetFramelessCursor();
+    if(!widget || !edges)
+        return;
+    widget->setCursor(framelessCursorForEdges(edges));
+    framelessCursorWidget = widget;
+    framelessCursorEdges = edges;
+}
+
+void MW::resetFramelessCursor() {
+    if(framelessCursorWidget)
+        framelessCursorWidget->unsetCursor();
+    framelessCursorWidget = nullptr;
+    framelessCursorEdges = Qt::Edges();
+}
+
+void MW::enableFramelessMouseTracking() {
+    const QList<QWidget*> widgets = findChildren<QWidget*>();
+    for(QWidget *widget : widgets) {
+        if(!widget->hasMouseTracking())
+            widget->setMouseTracking(true);
+    }
 }
 
 bool MW::eventFilter(QObject *obj, QEvent *event) {
     const QEvent::Type type = event->type();
+    if(type == QEvent::Leave) {
+        // do not leave the resize cursor behind when the pointer leaves
+        if(framelessCursorWidget && framelessCursorWidget.data() == qobject_cast<QWidget*>(obj))
+            resetFramelessCursor();
+        return false;
+    }
     if(type != QEvent::MouseButtonPress
        && type != QEvent::MouseMove
        && type != QEvent::MouseButtonRelease)
@@ -1018,11 +1074,18 @@ bool MW::eventFilter(QObject *obj, QEvent *event) {
                 return false;
             framelessDragMode = FRAMELESS_DRAG_RESIZE;
             framelessResizeEdges = edges;
+            updateFramelessCursor(widget, edges);
         }
         framelessPressPos = mouseGlobalPos(mouseEvent);
         framelessStartGeometry = geometry();
         // do not pass the click to the widget under the cursor
         return true;
+    }
+
+    if(type == QEvent::MouseMove && !mouseEvent->buttons()) {
+        // hovering: show which edge would be dragged
+        updateFramelessCursor(widget, framelessEdgesAt(mapFromGlobal(mouseGlobalPos(mouseEvent))));
+        return false;
     }
 
     if(framelessDragMode == FRAMELESS_DRAG_NONE)
