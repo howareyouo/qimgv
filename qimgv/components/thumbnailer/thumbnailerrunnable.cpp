@@ -24,11 +24,11 @@ QString ThumbnailerRunnable::generateIdString(QString path, int size, bool crop)
 }
 
 std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, QString path, int size, bool crop, bool force) {
-    DocumentInfo imgInfo(path);
     QString thumbnailId = generateIdString(path, size, crop);
     std::unique_ptr<QImage> image;
 
-    QString time = QString::number(imgInfo.lastModified().toMSecsSinceEpoch());
+    QFileInfo fileInfo(path);
+    QString time = QString::number(fileInfo.lastModified().toMSecsSinceEpoch());
 
     if(!force && cache) {
         image.reset(cache->readThumbnail(thumbnailId));
@@ -37,6 +37,7 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
     }
 
     if(!image) {
+        DocumentInfo imgInfo(path);
         if(imgInfo.type() == DocumentType::NONE) {
             std::shared_ptr<Thumbnail> thumbnail(new Thumbnail(imgInfo.fileName(), "", size, nullptr));
             return thumbnail;
@@ -58,17 +59,13 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
 
         if(cache) {
             // save thumbnail if it makes sense
-            // FIXME: avoid too much i/o
             if(originalSize.width() > size || originalSize.height() > size)
                 cache->saveThumbnail(image.get(), thumbnailId);
         }
     }
-    auto && tmpPixmap = new QPixmap(image->size());
-    *tmpPixmap = QPixmap::fromImage(*image);
-    tmpPixmap->setDevicePixelRatio(qApp->devicePixelRatio());
 
     QString label;
-    if(tmpPixmap->width() == 0) {
+    if(!image || image->width() == 0) {
         label = "error";
     } else  {
         // put info into Thumbnail object
@@ -77,8 +74,7 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
                 image->text("originalHeight") +
                 image->text("label");
     }
-    std::shared_ptr<QPixmap> pixmapPtr(tmpPixmap);
-    std::shared_ptr<Thumbnail> thumbnail(new Thumbnail(imgInfo.fileName(), label, size, pixmapPtr));
+    std::shared_ptr<Thumbnail> thumbnail(new Thumbnail(fileInfo.fileName(), label, size, std::move(image)));
     return thumbnail;
 }
 

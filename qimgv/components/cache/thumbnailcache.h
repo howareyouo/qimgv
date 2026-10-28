@@ -26,4 +26,5 @@ private:
     // we are still bottlenecked by disk access anyway
     QMutex mutex;
     QString cacheDirPath;
+    void removeLegacyCache();
 };

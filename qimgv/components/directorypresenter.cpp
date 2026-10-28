@@ -1,4 +1,4 @@
-﻿#include "directorypresenter.h"
+#include "directorypresenter.h"
 
 DirectoryPresenter::DirectoryPresenter(QObject *parent) : QObject(parent), mShowDirs(false) {
     connect(&thumbnailer, &Thumbnailer::thumbnailReady, this, &DirectoryPresenter::onThumbnailReady);
@@ -194,18 +194,18 @@ void DirectoryPresenter::generateThumbnails(QList<int> indexes, int size, bool c
             QSvgRenderer svgRenderer;
             svgRenderer.load(QString(":/res/icons/common/other/folder32-scalable.svg"));
             int factor = (size * 0.90f) / svgRenderer.defaultSize().width();
-            QPixmap *pixmap = new QPixmap(svgRenderer.defaultSize() * factor);
-            pixmap->fill(Qt::transparent);
-            QPainter pixPainter(pixmap);
+            QPixmap pixmap(svgRenderer.defaultSize() * factor);
+            pixmap.fill(Qt::transparent);
+            QPainter pixPainter(&pixmap);
             svgRenderer.render(&pixPainter);
             pixPainter.end();
 
-            ImageLib::recolor(*pixmap, settings->colorScheme().icons);
+            ImageLib::recolor(pixmap, settings->colorScheme().icons);
 
             std::shared_ptr<Thumbnail> thumb(new Thumbnail(model->dirNameAt(i),
                                                            "Folder",
                                                            size,
-                                                           std::shared_ptr<QPixmap>(pixmap)));
+                                                           std::make_shared<QImage>(pixmap.toImage())));
             // ^----------------------------------------------------------------
             view->setThumbnail(i, thumb);
         } else {
