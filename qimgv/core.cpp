@@ -6,6 +6,7 @@
  */
 
 #include "core.h"
+#include "utils/imagelib.h"
 
 #ifdef __WIN32
 #include <tchar.h>
@@ -183,9 +184,9 @@ void Core::initActions() {
     actionManager->registerHandler("renameFile",       [this]{ showRenameDialog(); });
     actionManager->registerHandler("contextMenu",      [this]{ mw->showContextMenu(); });
     actionManager->registerHandler("toggleTransparencyGrid", [this]{ mw->toggleTransparencyGrid(); });
-    actionManager->registerHandler("sortByName",       [this]{ sortByName(); });
-    actionManager->registerHandler("sortByTime",       [this]{ sortByTime(); });
-    actionManager->registerHandler("sortBySize",       [this]{ sortBySize(); });
+    actionManager->registerHandler("sortByName",       [this]{ toggleSort(SortingMode::SORT_NAME); });
+    actionManager->registerHandler("sortByTime",       [this]{ toggleSort(SortingMode::SORT_TIME); });
+    actionManager->registerHandler("sortBySize",       [this]{ toggleSort(SortingMode::SORT_SIZE); });
     actionManager->registerHandler("toggleImageInfo",  [this]{ mw->toggleImageInfoOverlay(); });
     actionManager->registerHandler("toggleShuffle",    [this]{ toggleShuffle(); });
     actionManager->registerHandler("toggleScalingFilter", [this]{ mw->toggleScalingFilter(); });
@@ -346,68 +347,47 @@ void Core::close() {
     mw->close();
 }
 
-void Core::removePermanent() {
+void Core::removeSelection(bool trash) {
     auto paths = currentSelection();
     if(!paths.count())
         return;
-    if(settings->confirmDelete()) {
+    if(trash ? settings->confirmTrash() : settings->confirmDelete()) {
         QString msg;
         if(paths.count() > 1)
-            msg = tr("Delete ") + QString::number(paths.count()) + tr(" items permanently?");
+            msg = trash ? tr("Move ") + QString::number(paths.count()) + tr(" items to trash?")
+                        : tr("Delete ") + QString::number(paths.count()) + tr(" items permanently?");
         else
-            msg = tr("Delete item permanently?");
-        if(!mw->showConfirmation(tr("Delete permanently"), msg))
+            msg = trash ? tr("Move item to trash?") : tr("Delete item permanently?");
+        if(!mw->showConfirmation(trash ? tr("Move to trash") : tr("Delete permanently"), msg))
             return;
     }
     FileOpResult result;
     int successCount = 0;
     for(auto path : paths) {
         QFileInfo fi(path);
-        if(fi.isDir())
+        if(!trash && fi.isDir())
             model->removeDir(path, false, true, result);
         else
-            result = removeFile(path, false);
+            result = removeFile(path, trash);
         if(result == FileOpResult::SUCCESS)
             successCount++;
     }
     if(paths.count() == 1) {
         if(result == FileOpResult::SUCCESS)
-            mw->showMessageSuccess(tr("File removed"));
+            mw->showMessageSuccess(trash ? tr("Moved to trash") : tr("File removed"));
         else
             outputError(result);
     } else if(paths.count() > 1) {
-        mw->showMessageSuccess(tr("Removed: ") + QString::number(successCount) + tr(" files"));
+        mw->showMessageSuccess((trash ? tr("Moved to trash: ") : tr("Removed: ")) + QString::number(successCount) + tr(" files"));
     }
 }
 
+void Core::removePermanent() {
+    removeSelection(false);
+}
+
 void Core::moveToTrash() {
-    auto paths = currentSelection();
-    if(!paths.count())
-        return;
-    if(settings->confirmTrash()) {
-        QString msg;
-        if(paths.count() > 1)
-            msg = tr("Move ") + QString::number(paths.count()) + tr(" items to trash?");
-        else
-            msg = tr("Move item to trash?");
-        if(!mw->showConfirmation(tr("Move to trash"), msg))
-            return;
-    }
-    FileOpResult result;
-    int successCount = 0;
-    for(auto path : paths) {
-        result = removeFile(path, true);
-        if(result == FileOpResult::SUCCESS)
-            successCount++;
-    }
-    if(paths.count() == 1) {
-        if(result == FileOpResult::SUCCESS)
-            mw->showMessageSuccess(tr("Moved to trash"));
-        else
-            outputError(result);
-    } else if(paths.count() > 1) {
-        mw->showMessageSuccess(tr("Moved to trash: ") + QString::number(successCount) + tr(" files"));
-    }
+    removeSelection(true);
 }
 
 void Core::reloadImage() {
@@ -511,48 +491,7 @@ void Core::openFromClipboard() {
         if(destPath.isEmpty())
             return;
 
-
-        // ------- temporarily copypasted from ImageStatic (needs refactoring)
-
-        QString tmpPath = destPath + "_" + QString(QCryptographicHash::hash(destPath.toUtf8(), QCryptographicHash::Md5).toHex());
-        QFileInfo fi(destPath);
-        QString ext = fi.suffix();
-        int quality = 95;
-        if(ext.compare("png", Qt::CaseInsensitive) == 0)
-            quality = 30;
-        else if(ext.compare("jpg", Qt::CaseInsensitive) == 0 || ext.compare("jpeg", Qt::CaseInsensitive) == 0)
-            quality = settings->JPEGSaveQuality();
-
-        bool backupExists = false, success = false, originalExists = false;
-
-        if(QFile::exists(destPath))
-            originalExists = true;
-
-        // backup the original file if possible
-        if(originalExists) {
-            QFile::remove(tmpPath);
-            if(!QFile::copy(destPath, tmpPath)) {
-                qDebug() << "Could not create file backup.";
-                return;
-            }
-            backupExists = true;
-        }
-        // save file
-        success = image.save(destPath, ext.toStdString().c_str(), quality);
-
-        if(backupExists) {
-            if(success) {
-                // everything ok - remove the backup
-                QFile file(tmpPath);
-                file.remove();
-            } else if(originalExists) {
-                // revert on fail
-                QFile::remove(destPath);
-                QFile::copy(tmpPath, destPath);
-                QFile::remove(tmpPath);
-            }
-        }
-        // ------------------------------------------
+        bool success = ImageLib::saveImageWithBackup(image, destPath);
         if(success)
             loadPath(destPath);
     }
@@ -626,6 +565,12 @@ QMimeData *Core::getMimeDataForImage(std::shared_ptr<Image> img, MimeDataTarget 
 }
 
 void Core::sortBy(SortingMode mode) {
+    model->setSortingMode(mode);
+}
+
+void Core::toggleSort(SortingMode mode) {
+    if(model->sortingMode() == mode)
+        mode = static_cast<SortingMode>(mode + 1);
     model->setSortingMode(mode);
 }
 
@@ -757,39 +702,39 @@ void Core::showInDirectory() {
 #endif
 }
 
-void Core::interactiveCopy(QList<QString> paths, QString destDirectory) {
+void Core::interactiveTransfer(QList<QString> paths, QString destDirectory, FileOpType op) {
     DialogResult overwriteFiles;
     for(auto path : paths) {
-        doInteractiveCopy(path, destDirectory, overwriteFiles);
+        doInteractiveTransfer(path, destDirectory, overwriteFiles, op);
         if(overwriteFiles.cancel)
             return;
     }
 }
 
 // todo: replacing DIR with a FILE?
-void Core::doInteractiveCopy(QString path, QString destDirectory, DialogResult &overwriteFiles) {
+void Core::doInteractiveTransfer(QString path, QString destDirectory, DialogResult &overwriteFiles, FileOpType op) {
     QFileInfo srcFi(path);
-// SINGLE FILE COPY ===========================================================================
+// SINGLE FILE TRANSFER ===========================================================================
     if(!srcFi.isDir()) {
         FileOpResult result;
-        FileOperations::copyFileTo(path, destDirectory, overwriteFiles, result);
+        transferFileTo(path, destDirectory, op, overwriteFiles, result);
         if(result == FileOpResult::DESTINATION_FILE_EXISTS) {
             if(overwriteFiles.all) // skipping all
                 return;
             overwriteFiles = mw->fileReplaceDialog(srcFi.absoluteFilePath(), destDirectory + "/" + srcFi.fileName(), FILE_TO_FILE, true);
             if(!overwriteFiles || overwriteFiles.cancel)
                 return;
-            FileOperations::copyFileTo(path, destDirectory, true, result);
+            transferFileTo(path, destDirectory, op, true, result);
         }
         if(result != FileOpResult::SUCCESS && !(result == FileOpResult::DESTINATION_FILE_EXISTS && !overwriteFiles)) {
             mw->showError(FileOperations::decodeResult(result));
             qDebug() << FileOperations::decodeResult(result);
         }
-        if(!overwriteFiles.all) // copy attempt done; reset temporary flag
+        if(!overwriteFiles.all) // transfer attempt done; reset temporary flag
             overwriteFiles.yes = false;
         return;
     }
-// DIR COPY (RECURSIVE) =======================================================================
+// DIR TRANSFER (RECURSIVE) =======================================================================
     QDir srcDir(srcFi.absoluteFilePath());
     QFileInfo dstFi(destDirectory + "/" + srcFi.baseName());
     QDir dstDir(dstFi.absoluteFilePath());
@@ -814,94 +759,33 @@ void Core::doInteractiveCopy(QString path, QString destDirectory, DialogResult &
         qDebug() << "Could not create directory " << dstDir.absolutePath();
         return;
     }
-    // copy all contents
+    // transfer all contents
     // TODO: skip symlinks? test
     QStringList entryList = srcDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
     for(auto entry : entryList) {
-        doInteractiveCopy(srcDir.absolutePath() + "/" + entry, dstDir.absolutePath(), overwriteFiles);
+        doInteractiveTransfer(srcDir.absolutePath() + "/" + entry, dstDir.absolutePath(), overwriteFiles, op);
         if(overwriteFiles.cancel)
             return;
     }
-}
-// -----------------------------------------------------------------------------------
-
-void Core::interactiveMove(QList<QString> paths, QString destDirectory) {
-    DialogResult overwriteFiles;
-    for(auto path : paths) {
-        doInteractiveMove(path, destDirectory, overwriteFiles);
-        if(overwriteFiles.cancel)
-            return;
+    if(op == FileOpType::MOVE) {
+        FileOpResult dirRmRes;
+        model->removeDir(srcDir.absolutePath(), false, false, dirRmRes);
     }
 }
 
-// todo: replacing DIR with a FILE?
-void Core::doInteractiveMove(QString path, QString destDirectory, DialogResult &overwriteFiles) {
-    QFileInfo srcFi(path);
-// SINGLE FILE MOVE ===========================================================================
-    if(!srcFi.isDir()) {
-        FileOpResult result;
-        model->moveFileTo(path, destDirectory, overwriteFiles, result);
-        if(result == FileOpResult::DESTINATION_FILE_EXISTS) {
-            if(overwriteFiles.all) // skipping all
-                return;
-            overwriteFiles = mw->fileReplaceDialog(srcFi.absoluteFilePath(), destDirectory + "/" + srcFi.fileName(), FILE_TO_FILE, true);
-            if(!overwriteFiles || overwriteFiles.cancel)
-                return;
-            model->moveFileTo(path, destDirectory, true, result);
-        }
-        if(result != FileOpResult::SUCCESS && !(result == FileOpResult::DESTINATION_FILE_EXISTS && !overwriteFiles)) {
-            mw->showError(FileOperations::decodeResult(result));
-            qDebug() << FileOperations::decodeResult(result);
-        }
-        if(!overwriteFiles.all) // move attempt done; reset temporary flag
-            overwriteFiles.yes = false;
-        return;
-    }
-// DIR MOVE (RECURSIVE) =======================================================================
-    QDir srcDir(srcFi.absoluteFilePath());
-    QFileInfo dstFi(destDirectory + "/" + srcFi.baseName());
-    QDir dstDir(dstFi.absoluteFilePath());
-    if(dstFi.exists() && !dstFi.isDir()) { // overwriting file with a folder
-        if(!overwriteFiles && !overwriteFiles.all) {
-            overwriteFiles = mw->fileReplaceDialog(srcFi.absoluteFilePath(), dstFi.absoluteFilePath(), DIR_TO_FILE, true);
-            if(!overwriteFiles || overwriteFiles.cancel)
-                return;
-            if(!overwriteFiles.all) // reset temp flag right away
-                overwriteFiles.yes = false;
-        }
-        // remove dst file; give up if not writable
-        FileOpResult result;
-        FileOperations::removeFile(dstFi.absoluteFilePath(), result);
-        if(result != FileOpResult::SUCCESS) {
-            mw->showError(FileOperations::decodeResult(result));
-            qDebug() << FileOperations::decodeResult(result);
-            return;
-        }
-    } else if(!dstDir.mkpath(".")) {
-        mw->showError(tr("Could not create directory ") + dstDir.absolutePath());
-        qDebug() << "Could not create directory " << dstDir.absolutePath();
-        return;
-    }
-    // move all contents
-    // TODO: skip symlinks? test
-    QStringList entryList = srcDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::Hidden | QDir::System);
-    for(auto entry : entryList) {
-        doInteractiveMove(srcDir.absolutePath() + "/" + entry, dstDir.absolutePath(), overwriteFiles);
-        if(overwriteFiles.cancel)
-            return;
-    }
-    FileOpResult dirRmRes;
-    model->removeDir(srcDir.absolutePath(), false, false, dirRmRes);
+void Core::transferFileTo(QString path, QString destDirectory, FileOpType op, bool overwrite, FileOpResult &result) {
+    if(op == FileOpType::COPY)
+        FileOperations::copyFileTo(path, destDirectory, overwrite, result);
+    else
+        model->moveFileTo(path, destDirectory, overwrite, result);
 }
-
-// -----------------------------------------------------------------------------------
 
 void Core::copyPathsTo(QList<QString> paths, QString destDirectory) {
-    interactiveCopy(paths, destDirectory);
+    interactiveTransfer(paths, destDirectory, FileOpType::COPY);
 }
 
 void Core::movePathsTo(QList<QString> paths, QString destDirectory) {
-    interactiveMove(paths, destDirectory);
+    interactiveTransfer(paths, destDirectory, FileOpType::MOVE);
 }
 
 void Core::moveCurrentFile(QString destDirectory) {
@@ -1096,27 +980,6 @@ QList<QString> Core::currentSelection() {
 }
 
 //------------------------
-
-void Core::sortByName() {
-    auto mode = SortingMode::SORT_NAME;
-    if(model->sortingMode() == mode)
-        mode = SortingMode::SORT_NAME_DESC;
-    model->setSortingMode(mode);
-}
-
-void Core::sortByTime() {
-    auto mode = SortingMode::SORT_TIME;
-    if(model->sortingMode() == mode)
-        mode = SortingMode::SORT_TIME_DESC;
-    model->setSortingMode(mode);
-}
-
-void Core::sortBySize() {
-    auto mode = SortingMode::SORT_SIZE;
-    if(model->sortingMode() == mode)
-        mode = SortingMode::SORT_SIZE_DESC;
-    model->setSortingMode(mode);
-}
 
 void Core::showRenameDialog() {
     if(model->isEmpty())

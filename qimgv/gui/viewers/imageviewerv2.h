@@ -224,4 +224,11 @@ private:
     void lockZoom();
     void doZoomIn(bool atCursor);
     void doZoomOut(bool atCursor);
+    void setZoomAnchorAtCursor(bool atCursor);
+    float nextZoomLevel(bool zoomIn, float steppedScale);
+    void updateFitModeFromScale();
+    void applyInitialFitMode();
+    void centerOnPixmapDeferred();
+    void scrollAxis(QScrollBar *bar, int value);
+    void scrollSmoothAxis(QTimeLine *tl, QScrollBar *bar, int delta);
 };

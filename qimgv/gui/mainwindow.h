@@ -164,6 +164,10 @@ private:
     qreal lastZoomScale;
     bool zoomResizeGuard, imageLoading;
     void setInteractionEnabled(bool mode);
+    void hideModeOverlays();
+    void viewerCall(void (ViewerWidget::*call)());
+    void finishShowImage();
+    void toggleCopyOverlay(CopyOverlayMode mode);
 
 private slots:
     void updateCurrentDisplay();

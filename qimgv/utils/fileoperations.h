@@ -36,8 +36,8 @@ public:
     static void moveToTrash(const QString &filePath, FileOpResult &result);
 
     static QString decodeResult(const FileOpResult &result);
+    static QString generateHash(const QString &str);
 
 private:
     static bool moveToTrashImpl(const QString &path);
-    static QString generateHash(const QString &str);
 };

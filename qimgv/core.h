@@ -97,8 +97,13 @@ private:
     template<typename... Args>
     void edit_template(bool save, QString actionName, const std::function<QImage*(std::shared_ptr<const QImage>, Args...)>& func, Args&&... as);
 
-    void doInteractiveCopy(QString path, QString destDirectory, DialogResult &overwriteAllFiles);
-    void doInteractiveMove(QString path, QString destDirectory, DialogResult &overwriteAllFiles);
+    enum class FileOpType { COPY, MOVE };
+
+    void interactiveTransfer(QList<QString> paths, QString destDirectory, FileOpType op);
+    void doInteractiveTransfer(QString path, QString destDirectory, DialogResult &overwriteFiles, FileOpType op);
+    void transferFileTo(QString path, QString destDirectory, FileOpType op, bool overwrite, FileOpResult &result);
+
+    void removeSelection(bool trash);
 
 private slots:
     void readSettings();
@@ -119,8 +124,6 @@ private slots:
     void copyCurrentFile(QString destDirectory);
     void moveCurrentFile(QString destDirectory);
     void copyPathsTo(QList<QString> paths, QString destDirectory);
-    void interactiveCopy(QList<QString> paths, QString destDirectory);
-    void interactiveMove(QList<QString> paths, QString destDirectory);
     void movePathsTo(QList<QString> paths, QString destDirectory);
     FileOpResult removeFile(QString fileName, bool trash);
     void onFileRemoved(QString filePath, int index);
@@ -150,9 +153,7 @@ private slots:
     void openFromClipboard();
     void renameCurrentSelection(QString newName);
     void sortBy(SortingMode mode);
-    void sortByName();
-    void sortByTime();
-    void sortBySize();
+    void toggleSort(SortingMode mode);
     void showRenameDialog();
     void onDraggedOut();
     void onDraggedOut(QList<QString> paths);

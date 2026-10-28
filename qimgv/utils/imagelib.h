@@ -40,4 +40,6 @@ class ImageLib {
         static std::unique_ptr<const QImage> exifRotated(std::unique_ptr<const QImage> src, int orientation);
         static std::unique_ptr<QImage> exifRotated(std::unique_ptr<QImage> src, int orientation);
         static void recolor(QPixmap &pixmap, QColor color);
+
+        static bool saveImageWithBackup(const QImage &src, const QString &destPath);
 };

@@ -1,4 +1,6 @@
 #include "imagelib.h"
+#include "fileoperations.h"
+#include <QFile>
 
 void ImageLib::recolor(QPixmap &pixmap, QColor color) {
     QPainter p(&pixmap);
@@ -224,3 +226,48 @@ QImage* ImageLib::scaled_CV(std::shared_ptr<const QImage> source, QSize destSize
     return dest;
 }
 #endif
+//------------------------------------------------------------------------------
+bool ImageLib::saveImageWithBackup(const QImage &src, const QString &destPath) {
+    QString tmpPath = destPath + "_" + FileOperations::generateHash(destPath);
+    QFileInfo fi(destPath);
+    QString ext = fi.suffix();
+    // png compression note from libpng
+    // Note that tests have shown that zlib compression levels 3-6 usually perform as well
+    // as level 9 for PNG images, and do considerably fewer caclulations
+    int quality = 95;
+    if(ext.compare("png", Qt::CaseInsensitive) == 0)
+        quality = 30;
+    else if(ext.compare("jpg", Qt::CaseInsensitive) == 0 || ext.compare("jpeg", Qt::CaseInsensitive) == 0)
+        quality = settings->JPEGSaveQuality();
+
+    bool backupExists = false, success = false, originalExists = false;
+
+    if(QFile::exists(destPath))
+        originalExists = true;
+
+    // backup the original file if possible
+    if(originalExists) {
+        QFile::remove(tmpPath);
+        if(!QFile::copy(destPath, tmpPath)) {
+            qDebug() << "ImageLib::saveImageWithBackup() - Could not create file backup.";
+            return false;
+        }
+        backupExists = true;
+    }
+    // save file
+    success = src.save(destPath, ext.toStdString().c_str(), quality);
+
+    if(backupExists) {
+        if(success) {
+            // everything ok - remove the backup
+            QFile file(tmpPath);
+            file.remove();
+        } else if(originalExists) {
+            // revert on fail
+            QFile::remove(destPath);
+            QFile::copy(tmpPath, destPath);
+            QFile::remove(tmpPath);
+        }
+    }
+    return success;
+}

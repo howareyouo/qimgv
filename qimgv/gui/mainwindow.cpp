@@ -150,7 +150,7 @@ void MW::setupRenameOverlay() {
     connect(renameOverlay, &RenameOverlay::renameRequested, this, &MW::renameRequested);
 }
 
-void MW::toggleFolderView() {
+void MW::hideModeOverlays() {
     hideCropPanel();
     if(copyOverlay)
         copyOverlay->hide();
@@ -158,18 +158,16 @@ void MW::toggleFolderView() {
         renameOverlay->hide();
     docWidget->hideFloatingPanel();
     imageInfoOverlay->hide();
+}
+
+void MW::toggleFolderView() {
+    hideModeOverlays();
     centralWidget->toggleViewMode();
     onInfoUpdated();
 }
 
 void MW::enableFolderView() {
-    hideCropPanel();
-    if(copyOverlay)
-        copyOverlay->hide();
-    if(renameOverlay)
-        renameOverlay->hide();
-    docWidget->hideFloatingPanel();
-    imageInfoOverlay->hide();
+    hideModeOverlays();
     centralWidget->showFolderView();
     onInfoUpdated();
 }
@@ -183,36 +181,27 @@ ViewMode MW::currentViewMode() {
     return centralWidget->currentViewMode();
 }
 
-void MW::fitWindow() {
-    if(viewerWidget->interactionEnabled()) {
-        viewerWidget->fitWindow();
-    } else {
+void MW::viewerCall(void (ViewerWidget::*call)()) {
+    if(viewerWidget->interactionEnabled())
+        (viewerWidget.get()->*call)();
+    else
         showMessage("Zoom temporary disabled");
-    }
+}
+
+void MW::fitWindow() {
+    viewerCall(&ViewerWidget::fitWindow);
 }
 
 void MW::fitWidth() {
-    if(viewerWidget->interactionEnabled()) {
-        viewerWidget->fitWidth();
-    } else {
-        showMessage("Zoom temporary disabled");
-    }
+    viewerCall(&ViewerWidget::fitWidth);
 }
 
 void MW::fitOriginal() {
-    if(viewerWidget->interactionEnabled()) {
-        viewerWidget->fitOriginal();
-    } else {
-        showMessage("Zoom temporary disabled");
-    }
+    viewerCall(&ViewerWidget::fitOriginal);
 }
 
 void MW::fitWindowStretch() {
-    if(viewerWidget->interactionEnabled()) {
-        viewerWidget->fitWindowStretch();
-    } else {
-        showMessage("Zoom temporary disabled");
-    }
+    viewerCall(&ViewerWidget::fitWindowStretch);
 }
 
 // switch between 1:1 and Fit All
@@ -354,14 +343,18 @@ void MW::growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom) {
         viewerWidget->centerImage();
 }
 
+void MW::finishShowImage() {
+    imageLoading = false;
+    lastZoomScale = viewerWidget->currentScale();
+    updateCropPanelData();
+}
+
 void MW::showImage(std::unique_ptr<QPixmap> pixmap) {
     imageLoading = true;
     if(settings->autoResizeWindow())
         preShowResize(pixmap->size());
     viewerWidget->showImage(std::move(pixmap));
-    imageLoading = false;
-    lastZoomScale = viewerWidget->currentScale();
-    updateCropPanelData();
+    finishShowImage();
 }
 
 void MW::showAnimation(std::shared_ptr<QMovie> movie) {
@@ -369,9 +362,7 @@ void MW::showAnimation(std::shared_ptr<QMovie> movie) {
     if(settings->autoResizeWindow())
         preShowResize(movie->frameRect().size());
     viewerWidget->showAnimation(std::move(movie));
-    imageLoading = false;
-    lastZoomScale = viewerWidget->currentScale();
-    updateCropPanelData();
+    finishShowImage();
 }
 
 void MW::showContextMenu() {
@@ -858,7 +849,7 @@ void MW::hideCropPanel() {
     activeSidePanel = SIDEPANEL_NONE;
 }
 
-void MW::triggerCopyOverlay() {
+void MW::toggleCopyOverlay(CopyOverlayMode mode) {
     if(!viewerWidget->isDisplaying())
         return;
     if(!copyOverlay)
@@ -866,28 +857,20 @@ void MW::triggerCopyOverlay() {
 
     if(centralWidget->currentViewMode() == MODE_FOLDERVIEW)
         return;
-    if(copyOverlay->operationMode() == OVERLAY_COPY) {
+    if(copyOverlay->operationMode() == mode) {
         copyOverlay->isHidden() ? copyOverlay->show() : copyOverlay->hide();
     } else {
-        copyOverlay->setDialogMode(OVERLAY_COPY);
+        copyOverlay->setDialogMode(mode);
         copyOverlay->show();
     }
 }
 
-void MW::triggerMoveOverlay() {
-    if(!viewerWidget->isDisplaying())
-        return;
-    if(!copyOverlay)
-        setupCopyOverlay();
+void MW::triggerCopyOverlay() {
+    toggleCopyOverlay(OVERLAY_COPY);
+}
 
-    if(centralWidget->currentViewMode() == MODE_FOLDERVIEW)
-        return;
-    if(copyOverlay->operationMode() == OVERLAY_MOVE) {
-        copyOverlay->isHidden() ? copyOverlay->show() : copyOverlay->hide();
-    } else {
-        copyOverlay->setDialogMode(OVERLAY_MOVE);
-        copyOverlay->show();
-    }
+void MW::triggerMoveOverlay() {
+    toggleCopyOverlay(OVERLAY_MOVE);
 }
 
 // quit fullscreen or exit the program
