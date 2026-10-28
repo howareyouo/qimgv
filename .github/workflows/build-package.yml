@@ -1,5 +1,7 @@
 name: msys2 dev-latest
 on: [workflow_dispatch]
+permissions:
+  contents: write
 #on:
 #  push:
 #    branches:
@@ -25,7 +27,7 @@ jobs:
       - id: build
         name: CI-Build
         run: |
-          export BUILD_NAME="qimgv-x64_$(git describe --tags)"
+          export BUILD_NAME="qimgv-x64_$(git describe --tags --always)"
           echo "build_name=${BUILD_NAME}" >> $GITHUB_OUTPUT
           echo "build_file_name=${BUILD_NAME}.7z" >> $GITHUB_OUTPUT
           ./scripts/build-qimgv.sh
