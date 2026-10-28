@@ -45,6 +45,10 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-libheif \
     mingw-w64-ucrt-x86_64-libraw
 
+# Native cmake + pkg-config need Windows-style paths; a few .pc files hardcode
+# the POSIX prefix which cmake would otherwise report as a non-existent path.
+sed -i "s|=/ucrt64|=$PREFIX|g" "$PREFIX"/lib/pkgconfig/*.pc "$PREFIX"/share/pkgconfig/*.pc 2>/dev/null || true
+
 QMAKE="$(command -v qmake-qt5 || command -v qmake || true)"
 if [[ -z "$QMAKE" ]]; then
     echo "ERROR: qmake not found after installing qt5" >&2
