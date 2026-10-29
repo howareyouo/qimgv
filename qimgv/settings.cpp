@@ -288,6 +288,12 @@ void Settings::applyAppPalette() {
         pal.setColor(QPalette::ToolTipBase,      c.widget);
         pal.setColor(QPalette::ToolTipText,      c.text);
         pal.setColor(QPalette::Link,             c.accent);
+        // 3d shades, used by styles that draw from the palette (fusion)
+        pal.setColor(QPalette::Light,            c.button.lighter(150));
+        pal.setColor(QPalette::Midlight,         c.button.lighter(120));
+        pal.setColor(QPalette::Mid,              c.button.darker(130));
+        pal.setColor(QPalette::Dark,             c.button.darker(160));
+        pal.setColor(QPalette::Shadow,           c.button.darker(200));
 #if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
         pal.setColor(QPalette::PlaceholderText,  c.text_lc2);
 #endif

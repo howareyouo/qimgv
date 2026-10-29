@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QHash>
+#include "utils/stuff.h"
 
 SettingsDialog::SettingsDialog(QWidget *parent) :
     QDialog(parent),
@@ -455,6 +456,25 @@ void SettingsDialog::setColorScheme(ColorScheme colors) {
     ui->colorSelectorOverlay->setColor(colors.overlay);
     ui->colorSelectorOverlayText->setColor(colors.overlay_text);
     ui->colorSelectorScrollbar->setColor(colors.scrollbar);
+
+    mDarkTitleBar = colors.widget.valueF() <= 0.45f;
+    updateTitleBar();
+}
+
+//------------------------------------------------------------------------------
+// the window frame is drawn by the system, so neither the stylesheet nor the
+// palette can touch it
+void SettingsDialog::updateTitleBar() {
+    // winId() would create the native window too early when called from constructor
+    if(!isVisible())
+        return;
+    applyWindowTitleBarTheme(this, mDarkTitleBar);
+}
+
+//------------------------------------------------------------------------------
+void SettingsDialog::showEvent(QShowEvent *event) {
+    QDialog::showEvent(event);
+    updateTitleBar();
 }
 
 //------------------------------------------------------------------------------

@@ -74,8 +74,19 @@ int main(int argc, char *argv[]) {
         a.setStyle(QStyleFactory::create("Fusion"));
 #else
     QApplication a(argc, argv);
+#ifdef _WIN32
+    // the native windows style paints its widgets from the system theme and
+    // ignores the application palette, so everything the stylesheet does not
+    // cover (buttons, comboboxes, checkboxes, scrollbars in the settings dialog)
+    // stays white even with a dark color scheme. fusion follows the palette.
+    if(QStyle *fusionStyle = QStyleFactory::create("Fusion"))
+        a.setStyle(new ProxyStyle(fusionStyle));
+    else
+        a.setStyle(new ProxyStyle);
+#else
     // use some style workarounds
     a.setStyle(new ProxyStyle);
+#endif
 #endif
 
     QCoreApplication::setOrganizationName("qimgv");

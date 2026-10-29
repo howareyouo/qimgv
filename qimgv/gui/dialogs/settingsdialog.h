@@ -34,6 +34,9 @@ public:
 public slots:
     int exec();
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private:
     void readColorScheme();
     void setColorScheme(ColorScheme colors);
@@ -50,6 +53,8 @@ private:
     void setupSidebar();
     void removeShortcutAt(int row);
     void adjustSizeToContents();
+    void updateTitleBar();
+    bool mDarkTitleBar = false;
     QMap<QString, QString> langs; // <"en_US", "English">
     QButtonGroup fitModeGrp, folderEndGrp, zoomIndGrp;
 

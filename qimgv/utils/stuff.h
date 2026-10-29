@@ -14,3 +14,8 @@ int clamp(int x, int lower, int upper);
 int probeOS();
 StdString toStdString(QString str);
 QString fromStdString(StdString str);
+
+class QWidget;
+// paint the native window frame (title bar) in dark or light mode.
+// no-op where the window frame is not drawn by the system.
+void applyWindowTitleBarTheme(QWidget *widget, bool dark);
