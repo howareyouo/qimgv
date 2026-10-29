@@ -499,8 +499,12 @@ bool ViewerWidget::focusNextPrevChild(bool mode) {
 void ViewerWidget::keyPressEvent(QKeyEvent *event) {
     event->accept();
     if(currentWidget == IMAGEVIEWER && imageViewer->isDisplaying()) {
-        // switch to fitWidth via up arrow
-        if(ShortcutBuilder::fromEvent(event) == "Up" && !actionManager->actionForShortcut("Up").isEmpty()) {
+        // switch to fitWidth via up arrow, unless up arrow is a zoom shortcut:
+        // a fit window image is usually already exactly fit to width, so the
+        // switch is a no-op and would eat the first zoom-in press
+        QString upAction = actionManager->actionForShortcut("Up");
+        if(ShortcutBuilder::fromEvent(event) == "Up" && !upAction.isEmpty()
+                && !upAction.startsWith("zoom")) {
             if(imageViewer->fitMode() == FIT_WINDOW && imageViewer->scaledImageFits()) {
                 imageViewer->setFitWidth();
                 return;
