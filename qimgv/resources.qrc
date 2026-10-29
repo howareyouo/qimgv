@@ -42,8 +42,6 @@
         <file>res/icons/common/buttons/videocontrols/skip-forward24@2x.png</file>
         <file>res/icons/common/menuitem/copy16.png</file>
         <file>res/icons/common/menuitem/copy16@2x.png</file>
-        <file>res/icons/common/menuitem/document-view16.png</file>
-        <file>res/icons/common/menuitem/document-view16@2x.png</file>
         <file>res/icons/common/menuitem/flip-h16.png</file>
         <file>res/icons/common/menuitem/flip-h16@2x.png</file>
         <file>res/icons/common/menuitem/flip-v16.png</file>
@@ -74,7 +72,6 @@
         <file>res/icons/common/notifications/success16@2x.png</file>
         <file>res/icons/common/other/dropDownArrow.png</file>
         <file>res/icons/common/other/dropDownArrow@2x.png</file>
-        <file>res/icons/common/other/empty.png</file>
         <file>res/icons/common/other/image-crop48.png</file>
         <file>res/icons/common/other/image-crop48@2x.png</file>
         <file>res/icons/common/other/loading-error72.png</file>
@@ -97,14 +94,9 @@
         <file>res/icons/common/logo/3rdparty/qt22@2x.png</file>
         <file>res/icons/common/logo/app/22.png</file>
         <file>res/icons/common/logo/app/22@2x.png</file>
-        <file>res/icons/dark/other/collapsed.png</file>
-        <file>res/icons/dark/other/expanded.png</file>
-        <file>res/icons/light/other/collapsed.png</file>
-        <file>res/icons/light/other/expanded.png</file>
         <file>res/styles/style-template.qss</file>
         <file>res/icons/common/buttons/panel/settings20.png</file>
         <file>res/icons/common/buttons/panel/settings20@2x.png</file>
-        <file>res/icons/common/other/folder96.png</file>
         <file>res/icons/common/buttons/panel/folder16.png</file>
         <file>res/icons/common/buttons/panel/folder16@2x.png</file>
         <file>res/icons/common/other/folder32-scalable.svg</file>
@@ -113,7 +105,6 @@
         <file>res/icons/common/overlay/info16.png</file>
         <file>res/icons/common/overlay/info16@2x.png</file>
         <file>res/icons/common/menuitem/back16.png</file>
-        <file>res/icons/common/menuitem/forward16.png</file>
         <file>res/icons/common/other/checkerboard.png</file>
         <file>res/icons/common/menuitem/print16.png</file>
         <file>res/icons/common/menuitem/print16@2x.png</file>
@@ -134,9 +125,6 @@
         <file>res/icons/common/settings/appearance32@2x.png</file>
         <file>res/icons/common/settings/general32.png</file>
         <file>res/icons/common/settings/general32@2x.png</file>
-        <file>res/icons/common/settings/scale32.png</file>
-        <file>res/icons/common/settings/scale32@2x.png</file>
-        <file>res/icons/common/settings/shortcuts32_i.png</file>
         <file>res/icons/common/settings/shortcuts32.png</file>
         <file>res/icons/common/settings/shortcuts32@2x.png</file>
         <file>res/icons/common/settings/terminal32.png</file>
