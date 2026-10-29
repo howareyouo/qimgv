@@ -258,18 +258,14 @@ void MW::onZoomChanged(qreal scale) {
     if(windowState() != Qt::WindowNoState || !viewerWidget->isDisplaying())
         return;
     QSize imageSz = viewerWidget->imageRect().size();
-    if(zoomedOut) {
-        // never below the image's original (1:1) size
-        QSize original = viewerWidget->originalSize();
-        if(!original.isEmpty())
-            imageSz = imageSz.expandedTo(original);
-    }
     // defer so the zoom operation finishes with the current geometry first,
     // otherwise the viewport center it uses becomes stale
     bool atCursor = viewerWidget->lastZoomAtCursor();
     QTimer::singleShot(0, this, [this, imageSz, zoomedOut, atCursor]() {
         // allowShrink only while zooming out; zooming in never shrinks the window
-        growWindowForZoom(imageSz, zoomedOut, atCursor);
+        // centerZoom: only viewport-center anchored zooms (keyboard) keep the
+        // window center; cursor anchored zooms keep the top-left corner instead
+        growWindowForZoom(imageSz, zoomedOut, !atCursor);
     });
 }
 
@@ -305,9 +301,13 @@ void MW::growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom) {
     if(imageSz.width() > maxImageSz.width() || imageSz.height() > maxImageSz.height())
         imageSz.scale(maxImageSz, Qt::KeepAspectRatio);
     QSize target = imageSz + clientOverhead;
-    // zooming in only ever grows the window
+    // zooming in only ever grows the window and zooming out only ever shrinks
+    // it; without the latter a zoom out could jump the window up to the image's
+    // 1:1 size (the floor above) instead of following the image down
     QSize current = size();
-    if(!allowShrink)
+    if(allowShrink)
+        target = target.boundedTo(current);
+    else
         target = target.expandedTo(current);
     if(target == current)
         return;
@@ -337,9 +337,17 @@ void MW::growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom) {
     setGeometry(QRect(newFrame.topLeft() + QPoint(frameLeft, frameTop), target));
     zoomResizeGuard = false;
     // center-anchored zoom expects the image center to stay in the middle
-    // of the viewport; the window resize has shifted it, so re-center
-    if(centerZoom)
-        viewerWidget->centerImage();
+    // of the viewport; the window resize has shifted it, so re-center.
+    // deferred on purpose: the scrollbar ranges are not updated yet right
+    // after the resize, so the first centerOn() lands off-center
+    // (same qt quirk centerOnPixmapDeferred() works around)
+    if(centerZoom) {
+        QTimer::singleShot(0, this, [this]() {
+            // cursor-anchored zoom may have taken over in the meantime
+            if(!viewerWidget->lastZoomAtCursor())
+                viewerWidget->centerImage();
+        });
+    }
 }
 
 void MW::finishShowImage() {

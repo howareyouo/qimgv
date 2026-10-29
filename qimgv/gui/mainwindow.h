@@ -138,6 +138,8 @@ private:
     // grows / shrinks the window together with the image while zooming,
     // keeping the image aspect ratio, until width or height reaches
     // the screen edge; the window never goes below the image's original size
+    // centerZoom: keep the window center (keyboard zoom), otherwise keep the
+    // top-left corner (cursor anchored zoom)
     void onZoomChanged(qreal scale);
     void growWindowForZoom(QSize imageSz, bool allowShrink, bool centerZoom);
     qreal lastZoomScale;
