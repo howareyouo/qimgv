@@ -75,6 +75,7 @@ public:
 
     void setCurrentInfo(int fileIndex, int fileCount, QString filePath, QString fileName, QSize imageSize, qint64 fileSize, bool slideshow, bool shuffle, bool edited);
     void setExifInfo(QMap<QString, QString>);
+    bool isImageInfoOverlayVisible() const;
     std::shared_ptr<FolderViewProxy> getFolderView();
     std::shared_ptr<ThumbnailStripProxy> getThumbnailPanel();
 
@@ -176,6 +177,7 @@ protected:
    // bool focusNextPrevChild(bool);
 signals:
     void opened(QString);
+    void imageInfoOverlayVisibilityChanged(bool visible);
     void fullscreenStateChanged(bool);
     void copyRequested(QString);
     void moveRequested(QString);

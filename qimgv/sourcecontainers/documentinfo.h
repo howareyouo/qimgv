@@ -4,6 +4,7 @@
 #include <QSize>
 #include <QUrl>
 #include <QMimeDatabase>
+#include <QMutex>
 #include <QDebug>
 #include <QFileInfo>
 #include <QDateTime>
@@ -40,7 +41,9 @@ public:
 
     // file extension (guessed from mime-type)
     QString format() const;
-    int exifOrientation() const;
+    // note: the orientation is detected lazily, only when requested
+    // (the main image path lets QImageReader apply it while decoding)
+    int exifOrientation();
 
     QDateTime lastModified() const;
     void refresh();
@@ -53,6 +56,7 @@ private:
     int mOrientation;
     QString mFormat;
     bool exifLoaded;
+    bool mOrientationLoaded;
 
     // guesses file type from its contents
     // and sets extension
@@ -62,6 +66,9 @@ private:
     bool detectAnimatedWebP();
     bool detectAnimatedJxl();
     bool detectAnimatedAvif();
+
+    QMutex exifMutex;
+    void loadExifTagsImpl();
     QMap<QString, QString> exifTags;
     QMimeType mMimeType;
 };

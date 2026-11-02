@@ -1,10 +1,27 @@
 #include "documentinfo.h"
+#include <QFile>
+
+namespace {
+
+// reads a small slice of the file header; used for cheap animated-format
+// detection without a full QImageReader/mime lookup
+QByteArray readHeader(const QString &path, int offset, int length) {
+    QFile f(path);
+    if(!f.open(QFile::ReadOnly))
+        return QByteArray();
+    if(offset > 0 && !f.seek(offset))
+        return QByteArray();
+    return f.read(length);
+}
+
+} // namespace
 
 DocumentInfo::DocumentInfo(QString path)
     : mDocumentType(DocumentType::NONE),
       mOrientation(0),
       mFormat(""),
-      exifLoaded(false)
+      exifLoaded(false),
+      mOrientationLoaded(false)
 {
     fileInfo.setFile(path);
     if(!fileInfo.isFile()) {
@@ -64,7 +81,11 @@ void DocumentInfo::refresh() {
     fileInfo.refresh();
 }
 
-int DocumentInfo::exifOrientation() const {
+int DocumentInfo::exifOrientation() {
+    if(!mOrientationLoaded) {
+        mOrientationLoaded = true;
+        loadExifOrientation();
+    }
     return mOrientation;
 }
 
@@ -74,14 +95,24 @@ int DocumentInfo::exifOrientation() const {
 void DocumentInfo::detectFormat() {
     if(mDocumentType != DocumentType::NONE)
         return;
-    QMimeDatabase mimeDb;
-    mMimeType = mimeDb.mimeTypeForFile(fileInfo.filePath(), QMimeDatabase::MatchContent);
+
+    // one instance per thread: QMimeDatabase is reentrant, not thread-safe,
+    // and document info is also created by the thumbnail worker threads
+    thread_local QMimeDatabase mimeDb;
+    const QByteArray suffix = fileInfo.suffix().toLower().toUtf8();
+
+    // Looking the type up by extension is free, while MatchContent opens the
+    // file and reads its header. Only sniff the contents when the extension is
+    // unknown or gives no usable type.
+    mMimeType = mimeDb.mimeTypeForFile(fileInfo, QMimeDatabase::MatchExtension);
+    if(!mMimeType.isValid() || mMimeType.name() == "application/octet-stream")
+        mMimeType = mimeDb.mimeTypeForFile(fileInfo.filePath(), QMimeDatabase::MatchContent);
+
     auto mimeName = mMimeType.name().toUtf8();
-    auto suffix = fileInfo.suffix().toLower().toUtf8();
     if(mimeName == "image/jpeg") {
         mFormat = "jpg";
         mDocumentType = DocumentType::STATIC;
-    } else if(mimeName == "image/png") {
+    } else if(mimeName == "image/png" || mimeName == "image/apng") {
         if(settings->supportedFormats().contains("apng") && detectAPNG()) {
             mFormat = "apng";
             mDocumentType = DocumentType::ANIMATED;
@@ -115,44 +146,21 @@ void DocumentInfo::detectFormat() {
             mFormat = "jpg";
         mDocumentType = DocumentType::STATIC;
     }
-    loadExifOrientation();
+    // the orientation is not needed here: the image loader lets QImageReader
+    // apply it while decoding, and only the thumbnailer asks for it explicitly
 }
 
-inline
 // dumb apng detector
 bool DocumentInfo::detectAPNG() {
-    QFile f(fileInfo.filePath());
-    if(f.open(QFile::ReadOnly)) {
-        QDataStream in(&f);
-        const int len = 120;
-        QByteArray qbuf("\0", len);
-        if (in.readRawData(qbuf.data(), len) > 0) {
-            return qbuf.contains("acTL");
-        }
-    }
-    return false;
+    return readHeader(fileInfo.filePath(), 0, 120).contains("acTL");
 }
 
 bool DocumentInfo::detectAnimatedWebP() {
-    QFile f(fileInfo.filePath());
-    bool result = false;
-    if(f.open(QFile::ReadOnly)) {
-        QDataStream in(&f);
-        in.skipRawData(12);
-        char *buf = static_cast<char*>(malloc(5));
-        buf[4] = '\0';
-        in.readRawData(buf, 4);
-        if(strcmp(buf, "VP8X") == 0) {
-            in.skipRawData(4);
-            char flags;
-            in.readRawData(&flags, 1);
-            if(flags & (1 << 1)) {
-                result = true;
-            }
-        }
-        free(buf);
-    }
-    return result;
+    // "VP8X" chunk header, 4 bytes of chunk size, then flags (bit 1 = animated)
+    const QByteArray header = readHeader(fileInfo.filePath(), 12, 9);
+    if(header.size() < 9 || header.left(4) != "VP8X")
+        return false;
+    return (header.at(8) & (1 << 1)) != 0;
 }
 
 // TODO avoid creating multiple QImageReader instances
@@ -162,23 +170,15 @@ bool DocumentInfo::detectAnimatedJxl() {
 }
 
 bool DocumentInfo::detectAnimatedAvif() {
-    QFile f(fileInfo.filePath());
-    bool result = false;
-    if(f.open(QFile::ReadOnly)) {
-        QDataStream in(&f);
-        in.skipRawData(4); // skip box size
-        char *buf = static_cast<char*>(malloc(9));
-        buf[8] = '\0';
-        in.readRawData(buf, 8);
-        if(strcmp(buf, "ftypavis") == 0) {
-            result = true;
-        }
-        free(buf);
-    }
-    return result;
+    return readHeader(fileInfo.filePath(), 4, 8) == "ftypavis";
 }
 
 void DocumentInfo::loadExifTags() {
+    QMutexLocker locker(&exifMutex);
+    loadExifTagsImpl();
+}
+
+void DocumentInfo::loadExifTagsImpl() {
     if(exifLoaded)
         return;
     exifLoaded = true;
@@ -297,8 +297,8 @@ void DocumentInfo::loadExifTags() {
 }
 
 QMap<QString, QString> DocumentInfo::getExifTags() {
-    if(!exifLoaded)
-        loadExifTags();
+    QMutexLocker locker(&exifMutex);
+    loadExifTagsImpl();
     return exifTags;
 }
 
@@ -307,13 +307,16 @@ void DocumentInfo::loadExifOrientation() {
         return;
 
     QString path = filePath();
-    QImageReader *reader = nullptr;
-    if(!mFormat.isEmpty())
-        reader = new QImageReader(path, mFormat.toStdString().c_str());
-    else
-        reader = new QImageReader(path);
-
-    if(reader->canRead())
-        mOrientation = static_cast<int>(reader->transformation());
-    delete reader;
+    QImageReader reader(path, mFormat.isEmpty() ? nullptr : mFormat.toUtf8().constData());
+    if(reader.canRead()) {
+        mOrientation = static_cast<int>(reader.transformation());
+        return;
+    }
+    // the format guessed from the extension can be wrong for mislabeled files,
+    // so let qt detect the format from the contents
+    if(!mFormat.isEmpty()) {
+        QImageReader sniffed(path);
+        if(sniffed.canRead())
+            mOrientation = static_cast<int>(sniffed.transformation());
+    }
 }

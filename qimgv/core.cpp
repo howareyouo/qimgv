@@ -7,10 +7,45 @@
 
 #include "core.h"
 #include "utils/imagelib.h"
+#include <QRunnable>
+#include <functional>
 
 #ifdef __WIN32
 #include <tchar.h>
 #endif
+
+namespace {
+
+// parses exif tags off the gui thread. the tags are only used by the image
+// info overlay; reading the whole file can take a while on big images.
+class ExifLoadTask : public QRunnable {
+public:
+    using Callback = std::function<void(const QString &, QMap<QString, QString>)>;
+
+    ExifLoadTask(std::shared_ptr<Image> image, QObject *context, QString path, Callback callback)
+        : image(std::move(image)),
+          context(context),
+          path(std::move(path)),
+          callback(std::move(callback))
+    {
+        setAutoDelete(true);
+    }
+
+    void run() override {
+        QMap<QString, QString> tags = image->getExifTags();
+        QMetaObject::invokeMethod(context, [cb = callback, p = path, t = std::move(tags)]() {
+            cb(p, t);
+        }, Qt::QueuedConnection);
+    }
+
+private:
+    std::shared_ptr<Image> image;
+    QObject *context;
+    QString path;
+    Callback callback;
+};
+
+} // namespace
 
 Core::Core()
     : QObject(),
@@ -20,6 +55,7 @@ Core::Core()
       slideshow(false),
       shuffle(false)
 {
+    exifPool.setMaxThreadCount(1);
     loadTranslation();
     initGui();
     initComponents();
@@ -34,6 +70,13 @@ Core::Core()
         onFirstRun();
     else if(appVersion > lastVersion)
         onUpdate();
+}
+
+Core::~Core() {
+    // stop the background workers before the components they may reference go away
+    exifPool.clear();
+    exifPool.waitForDone();
+    Thumbnailer::shutdown();
 }
 
 void Core::readSettings() {
@@ -96,6 +139,12 @@ void Core::connectComponents() {
             this, qOverload<QList<QString>,QString>(&Core::movePathsTo));
 
     connect(scriptManager, &ScriptManager::error, mw, &MW::showError);
+
+    // exif info is parsed only while the info overlay is visible
+    connect(mw, &MW::imageInfoOverlayVisibilityChanged, this, [this](bool visible) {
+        if(visible)
+            requestExifInfo();
+    });
 
     connect(mw, &MW::opened,                this, &Core::loadPath);
     connect(mw, &MW::droppedIn,             this, &Core::onDropIn);
@@ -1374,13 +1423,38 @@ void Core::guiSetImage(std::shared_ptr<Image> img) {
         mw->showAnimation(animated->getMovie());
     }
     img->isEdited() ? mw->showSaveOverlay() : mw->hideSaveOverlay();
-    // exif parsing can take a while on big files and it is only needed by the
-    // info overlay, so do it after the image is on screen
-    const QString exifPath = state.currentFilePath;
-    QTimer::singleShot(0, this, [this, exifPath, img]() {
-        if(exifPath == state.currentFilePath)
-            mw->setExifInfo(img->getExifTags());
-    });
+    // exif parsing reads the whole file and is only needed by the info
+    // overlay, so it is requested lazily (and in the background)
+    requestExifInfo(img);
+}
+
+void Core::requestExifInfo(std::shared_ptr<Image> img) {
+    // nothing to do unless the user is actually looking at the info overlay
+    if(!mw->isImageInfoOverlayVisible())
+        return;
+    const QString path = state.currentFilePath;
+    if(path.isEmpty())
+        return;
+    if(!img) {
+        if(state.currentImg && state.currentImg->filePath() == path)
+            img = state.currentImg;
+        else
+            return; // the image is not ready yet; guiSetImage() will request again
+    }
+    if(exifPendingPath == path)
+        return;
+    exifPendingPath = path;
+    exifPool.start(new ExifLoadTask(std::move(img), this, path,
+        [this](const QString &requestedPath, QMap<QString, QString> tags) {
+            if(exifPendingPath == requestedPath)
+                exifPendingPath.clear();
+            if(requestedPath == state.currentFilePath) {
+                mw->setExifInfo(tags);
+            } else if(mw->isImageInfoOverlayVisible()) {
+                // the image changed while we were parsing; catch up
+                requestExifInfo();
+            }
+        }));
 }
 
 void Core::updateInfoString() {

@@ -1,18 +1,49 @@
 #include "thumbnailer.h"
 
+namespace {
+
+// shared by every Thumbnailer instance; constructed on first use (after
+// settings are available). Intentionally leaked: the pool is stopped
+// explicitly in Thumbnailer::shutdown() before the app exits.
+struct ThumbnailerShared {
+    ThumbnailCache cache;
+    QThreadPool pool;
+
+    ThumbnailerShared() {
+        int threads = settings->thumbnailerThreadCount();
+        int globalThreads = QThreadPool::globalInstance()->maxThreadCount();
+        if(threads > globalThreads)
+            threads = globalThreads;
+        pool.setMaxThreadCount(threads);
+    }
+};
+
+ThumbnailerShared *sharedThumbnailer = nullptr;
+
+ThumbnailerShared &thumbnailerShared() {
+    if(!sharedThumbnailer)
+        sharedThumbnailer = new ThumbnailerShared();
+    return *sharedThumbnailer;
+}
+
+} // namespace
+
 Thumbnailer::Thumbnailer() {
-    cache = new ThumbnailCache();
-    pool = new QThreadPool(this);
-    int threads = settings->thumbnailerThreadCount();
-    int globalThreads = QThreadPool::globalInstance()->maxThreadCount();
-    if(threads > globalThreads)
-        threads = globalThreads;
-    pool->setMaxThreadCount(threads);
+    auto &shared = thumbnailerShared();
+    cache = &shared.cache;
+    pool = &shared.pool;
 }
 
 Thumbnailer::~Thumbnailer() {
-    pool->clear();
-    pool->waitForDone();
+    // the cache and the pool are owned by thumbnailerShared()
+}
+
+void Thumbnailer::shutdown() {
+    // don't instantiate the shared data on the way out
+    if(!sharedThumbnailer)
+        return;
+    sharedThumbnailer->pool.clear();
+    sharedThumbnailer->pool.waitForDone();
 }
 
 void Thumbnailer::waitForDone() {

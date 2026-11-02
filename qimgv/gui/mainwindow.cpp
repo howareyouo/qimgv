@@ -429,10 +429,16 @@ void MW::toggleFullscreenInfoBar() {
 void MW::toggleImageInfoOverlay() {
     if(centralWidget->currentViewMode() == MODE_FOLDERVIEW)
         return;
-    if(imageInfoOverlay->isHidden())
+    if(imageInfoOverlay->isHidden()) {
+        // exif data is requested asynchronously; drop the buffered tags first
+        // so that a different image doesn't show the previous one's data
+        imageInfoOverlay->setExifInfo(QMap<QString, QString>());
         imageInfoOverlay->show();
-    else
+    } else {
         imageInfoOverlay->hide();
+    }
+    // exif data is loaded on demand: let the core know when to fetch it
+    emit imageInfoOverlayVisibilityChanged(!imageInfoOverlay->isHidden());
 }
 
 void MW::toggleRenameOverlay(QString currentName) {
@@ -963,6 +969,10 @@ void MW::onInfoUpdated() {
 void MW::setExifInfo(QMap<QString, QString> info) {
     if(imageInfoOverlay)
         imageInfoOverlay->setExifInfo(info);
+}
+
+bool MW::isImageInfoOverlayVisible() const {
+    return imageInfoOverlay && !imageInfoOverlay->isHidden();
 }
 
 std::shared_ptr<FolderViewProxy> MW::getFolderView() {

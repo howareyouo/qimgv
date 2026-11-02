@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QDebug>
 #include <QMutex>
+#include <QThreadPool>
 #include <QClipboard>
 #include <QDrag>
 #include <QFileSystemModel>
@@ -38,6 +39,7 @@ class Core : public QObject {
     Q_OBJECT
 public:
     Core();
+    ~Core();
     void showGui();
 
 public slots:
@@ -82,6 +84,13 @@ private:
     void attachModel(DirectoryModel *_model);
     QString selectedPath();
     void guiSetImage(std::shared_ptr<Image> img);
+
+    // exif data is only needed by the image info overlay, so it is parsed
+    // lazily and in the background instead of blocking the gui thread
+    void requestExifInfo(std::shared_ptr<Image> img = nullptr);
+    QThreadPool exifPool;
+    QString exifPendingPath;
+
     QTimer slideshowTimer;
 
     void startSlideshowTimer();

@@ -44,6 +44,12 @@ std::shared_ptr<Thumbnail> ThumbnailerRunnable::generate(ThumbnailCache* cache, 
         }
         std::pair<QImage*, QSize> pair;
         pair = createThumbnail(imgInfo.filePath(), imgInfo.format().toStdString().c_str(), size, crop);
+        // decoding failed: the format guessed from the extension can be wrong
+        // for mislabeled files, so let qt detect the format from the contents
+        if((!pair.first || pair.first->isNull()) && !imgInfo.format().isEmpty()) {
+            delete pair.first;
+            pair = createThumbnail(imgInfo.filePath(), nullptr, size, crop);
+        }
         image.reset(pair.first);
         QSize originalSize = pair.second;
 
