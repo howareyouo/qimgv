@@ -1453,6 +1453,11 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../../gui/dialogs/settingsdialog.ui" line="1951"/>
+        <source>Keep zoom level when switching images with the same aspect ratio</source>
+        <translation>切换图片时保持缩放级别（比例相同）</translation>
+    </message>
+    <message>
         <location filename="../../gui/dialogs/settingsdialog.ui" line="2119"/>
         <source>Grid background on images with transparency</source>
         <translation type="unfinished"></translation>

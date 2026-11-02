@@ -481,6 +481,32 @@ void Settings::setKeepFitMode(bool mode) {
     settings->settingsConf->setValue("keepFitMode", mode);
 }
 //------------------------------------------------------------------------------
+bool Settings::keepZoomOnImageChange() {
+    return settings->settingsConf->value("keepZoomOnImageChange", true).toBool();
+}
+
+void Settings::setKeepZoomOnImageChange(bool mode) {
+    settings->settingsConf->setValue("keepZoomOnImageChange", mode);
+}
+//------------------------------------------------------------------------------
+QSize Settings::lastZoomImageSize() {
+    return settings->stateConf->value("lastZoomImageSize").toSize();
+}
+
+float Settings::lastZoomScale() {
+    return settings->stateConf->value("lastZoomScale", 0.0).toFloat();
+}
+
+void Settings::setLastZoomState(float scale, const QSize &imageSize) {
+    settings->stateConf->setValue("lastZoomScale", scale);
+    settings->stateConf->setValue("lastZoomImageSize", imageSize);
+}
+
+void Settings::clearLastZoomState() {
+    settings->stateConf->remove("lastZoomScale");
+    settings->stateConf->remove("lastZoomImageSize");
+}
+//------------------------------------------------------------------------------
 bool Settings::fullscreenMode() {
     return settings->settingsConf->value("openInFullscreen", false).toBool();
 }

@@ -9,6 +9,7 @@
 #include <QStringList>
 #include <QColor>
 #include <QPalette>
+#include <QSize>
 #include <QDir>
 #include <QKeySequence>
 #include <QMap>
@@ -185,6 +186,12 @@ public:
 
     bool keepFitMode();
     void setKeepFitMode(bool mode);
+    bool keepZoomOnImageChange();
+    void setKeepZoomOnImageChange(bool mode);
+    QSize lastZoomImageSize();
+    float lastZoomScale();
+    void setLastZoomState(float scale, const QSize &imageSize);
+    void clearLastZoomState();
 
     int expandLimit();
     void setExpandLimit(int value);

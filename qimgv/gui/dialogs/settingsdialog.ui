@@ -1949,6 +1949,13 @@ Drag the window with Alt + left mouse button, resize it by dragging its edges.</
                    </widget>
                   </item>
                   <item>
+                   <widget class="QCheckBox" name="keepZoomOnImageChangeCheckBox">
+                    <property name="text">
+                     <string>Keep zoom level when switching images with the same aspect ratio</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
                    <widget class="QWidget" name="widget_3" native="true">
                     <property name="accessibleName">
                      <string notr="true">SLine</string>

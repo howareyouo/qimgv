@@ -8,6 +8,13 @@ static QPoint mouseGlobalPos(const QMouseEvent *event) {
 #endif
 }
 
+static bool sameAspectRatio(const QSize &first, const QSize &second) {
+    if(first.isEmpty() || second.isEmpty())
+        return false;
+    return static_cast<qint64>(first.width()) * second.height()
+        == static_cast<qint64>(first.height()) * second.width();
+}
+
 ImageViewerV2::ImageViewerV2(QWidget *parent) : QGraphicsView(parent),
     pixmap(nullptr),
     pixmapScaled(nullptr),
@@ -18,6 +25,7 @@ ImageViewerV2::ImageViewerV2(QWidget *parent) : QGraphicsView(parent),
     smoothUpscaling(true),
     forceFastScale(false),
     keepFitMode(false),
+    keepZoomOnImageChange(true),
     loopPlayback(true),
     mIsFullscreen(false),
     scrollBarWorkaround(true),
@@ -146,6 +154,7 @@ void ImageViewerV2::readSettings() {
     if(expandLimit < 1.0f)
         expandLimit = maxScale;
     keepFitMode = settings->keepFitMode();
+    keepZoomOnImageChange = settings->keepZoomOnImageChange();
     imageFitModeDefault = settings->imageFitMode();
     zoomStep = settings->zoomStep();
     focusIn1to1 = settings->focusPointIn1to1Mode();
@@ -296,6 +305,18 @@ void ImageViewerV2::updatePixmap(std::unique_ptr<QPixmap> newPixmap) {
 
 void ImageViewerV2::showAnimation(std::shared_ptr<QMovie> _movie) {
     if(_movie && _movie->isValid()) {
+        QSize previousSize;
+        float previousScale = 0.0f;
+        if(keepZoomOnImageChange) {
+            if(pixmap && imageFitMode == FIT_FREE) {
+                previousSize = pixmap->size();
+                previousScale = currentScale();
+            } else if(!pixmap) {
+                // restore the zoom saved by the previous application run
+                previousSize = settings->lastZoomImageSize();
+                previousScale = settings->lastZoomScale();
+            }
+        }
         reset();
         movie = _movie;
         movie->jumpToFrame(0);
@@ -307,13 +328,25 @@ void ImageViewerV2::showAnimation(std::shared_ptr<QMovie> _movie) {
         emit durationChanged(movie->frameCount());
         emit frameChanged(0);
 
-        applyInitialFitMode();
+        applyInitialFitMode(previousSize, previousScale);
         startAnimation();
     }
 }
 
 // display & initialize
 void ImageViewerV2::showImage(std::unique_ptr<QPixmap> _pixmap) {
+    QSize previousSize;
+    float previousScale = 0.0f;
+    if(keepZoomOnImageChange) {
+        if(pixmap && imageFitMode == FIT_FREE) {
+            previousSize = pixmap->size();
+            previousScale = currentScale();
+        } else if(!pixmap) {
+            // restore the zoom saved by the previous application run
+            previousSize = settings->lastZoomImageSize();
+            previousScale = settings->lastZoomScale();
+        }
+    }
     reset();
     if(_pixmap) {
         pixmapItemScaled.hide();
@@ -326,7 +359,7 @@ void ImageViewerV2::showImage(std::unique_ptr<QPixmap> _pixmap) {
         pixmapItem.setTransformationMode(mode);
         pixmapItem.show();
 
-        applyInitialFitMode();
+        applyInitialFitMode(previousSize, previousScale);
         requestScaling();
         update();
     }
@@ -906,8 +939,17 @@ void ImageViewerV2::applyFitMode() {
     }
 }
 
-void ImageViewerV2::applyInitialFitMode() {
+void ImageViewerV2::applyInitialFitMode(const QSize &previousSize, float previousScale) {
     updateMinScale();
+    // keep the current zoom when switching to an image with the same aspect ratio
+    if(mViewLock == LOCK_NONE && previousScale > 0.0f && pixmap
+       && sameAspectRatio(previousSize, pixmap->size())) {
+        imageFitMode = FIT_FREE;
+        doZoom(previousScale);
+        centerOnPixmapDeferred();
+        updateSavedZoomState();
+        return;
+    }
     if(!keepFitMode || imageFitMode == FIT_FREE)
         imageFitMode = imageFitModeDefault;
     if(mViewLock == LOCK_NONE) {
@@ -918,6 +960,7 @@ void ImageViewerV2::applyInitialFitMode() {
         if(mViewLock == LOCK_ALL)
             applySavedViewportPos();
     }
+    updateSavedZoomState();
 }
 
 // public, sends scale request
@@ -928,6 +971,7 @@ void ImageViewerV2::setFitMode(ImageFitMode newMode) {
     imageFitMode = newMode;
     applyFitMode();
     requestScaling();
+    updateSavedZoomState();
 }
 
 // public, sends scale request
@@ -1164,6 +1208,16 @@ void ImageViewerV2::updateFitModeFromScale() {
         imageFitMode = FIT_WINDOW;
     else if(pixmapItem.scale() == fitWindowStretchScale)
         imageFitMode = FIT_WINDOW_STRETCH;
+    updateSavedZoomState();
+}
+
+void ImageViewerV2::updateSavedZoomState() {
+    if(!keepZoomOnImageChange || !pixmap)
+        return;
+    if(imageFitMode == FIT_FREE)
+        settings->setLastZoomState(currentScale(), pixmap->size());
+    else
+        settings->clearLastZoomState();
 }
 
 void ImageViewerV2::toggleLockZoom() {
@@ -1185,6 +1239,7 @@ void ImageViewerV2::lockZoom() {
     lockedScale = pixmapItem.scale();
     imageFitMode = FIT_FREE;
     saveViewportPos();
+    updateSavedZoomState();
 }
 
 void ImageViewerV2::toggleLockView() {

@@ -148,6 +148,7 @@ private:
     QPoint mouseMoveStartPos, mousePressPos, drawPos;
     bool transparencyGrid, expandImage,    smoothAnimatedImages,
          smoothUpscaling,  forceFastScale, keepFitMode,
+         keepZoomOnImageChange,
          loopPlayback,     mIsFullscreen,  scrollBarWorkaround,
          useFixedZoomLevels, trackpadDetection;
     QList<float> zoomLevels;
@@ -227,7 +228,8 @@ private:
     void setZoomAnchorAtCursor(bool atCursor);
     float nextZoomLevel(bool zoomIn, float steppedScale);
     void updateFitModeFromScale();
-    void applyInitialFitMode();
+    void updateSavedZoomState();
+    void applyInitialFitMode(const QSize &previousSize = QSize(), float previousScale = 0.0f);
     void centerOnPixmapDeferred();
     void scrollAxis(QScrollBar *bar, int value);
     void scrollSmoothAxis(QTimeLine *tl, QScrollBar *bar, int delta);
