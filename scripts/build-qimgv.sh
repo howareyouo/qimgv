@@ -60,7 +60,6 @@ pacman -S --noconfirm --needed \
     mingw-w64-ucrt-x86_64-opencv \
     mingw-w64-ucrt-x86_64-libjxl \
     mingw-w64-ucrt-x86_64-libraw \
-    mingw-w64-ucrt-x86_64-openssl \
     mingw-w64-ucrt-x86_64-libde265 \
     mingw-w64-ucrt-x86_64-dav1d \
     mingw-w64-ucrt-x86_64-zlib \
@@ -167,7 +166,6 @@ cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
     -DCMAKE_CXX_FLAGS="$CFL" \
     -DCMAKE_EXE_LINKER_FLAGS="$LDFL"
 ninja -C "$BUILD_DIR"
-ldd "$BUILD_DIR/qimgv/qimgv.exe" | grep -iE 'icu|Qt5Core' || true
 
 # ------------------------------------------------------------------------------
 echo "BUILDING IMAGEFORMATS"
