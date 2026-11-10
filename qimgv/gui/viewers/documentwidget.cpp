@@ -83,10 +83,6 @@ void DocumentWidget::setPanelPinned(bool mode) {
     mPanelPinned = mode;
 }
 
-bool DocumentWidget::panelPinned() {
-    return mPanelPinned;
-}
-
 std::shared_ptr<ThumbnailStripProxy> DocumentWidget::thumbPanel() {
     return mainPanel->getThumbnailStrip();
 }

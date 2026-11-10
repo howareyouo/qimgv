@@ -90,7 +90,7 @@ private:
     QTimer windowGeometryChangeTimer;
     int currentDisplay;
 
-    bool cropPanelActive, showInfoBarFullscreen, showInfoBarWindowed, maximized;
+    bool showInfoBarFullscreen, showInfoBarWindowed, maximized;
     std::shared_ptr<DocumentWidget> docWidget;
     std::shared_ptr<FolderViewProxy> folderView;
     std::shared_ptr<CentralWidget> centralWidget;
@@ -112,7 +112,6 @@ private:
     std::shared_ptr<InfoBarProxy> infoBarWindowed;
     FloatingMessageProxy *floatingMessage;
 
-    PanelPosition panelPosition;
     CurrentInfo info;
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     QDesktopWidget desktopWidget;

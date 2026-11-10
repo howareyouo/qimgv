@@ -28,7 +28,6 @@ public slots:
 
 private slots:
     void setPanelPinned(bool mode);
-    bool panelPinned();
     void readSettings();
 
 protected:

@@ -145,7 +145,7 @@ private:
     QGraphicsPixmapItem pixmapItem, pixmapItemScaled;
     QTimer *animationTimer, *scaleTimer;
     QScrollBar *hs, *vs;
-    QPoint mouseMoveStartPos, mousePressPos, drawPos;
+    QPoint mouseMoveStartPos, mousePressPos;
     bool transparencyGrid, expandImage,    smoothAnimatedImages,
          smoothUpscaling,  forceFastScale, keepFitMode,
          keepZoomOnImageChange,

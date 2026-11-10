@@ -11,7 +11,7 @@ void Loader::clearTasks() {
 }
 
 bool Loader::isBusy() const {
-    return (tasks.count() != 0);
+    return tasks.count() != 0;
 }
 
 bool Loader::isLoading(QString path) {

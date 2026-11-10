@@ -219,7 +219,7 @@ void DocumentInfo::loadExifTagsImpl() {
         Exiv2::ExifData::const_iterator it;
 
         it = exifData.findKey(make);
-        if(it != exifData.end() /* && it->count() */)
+        if(it != exifData.end())
             exifTags.insert(QObject::tr("Make"), QString::fromStdString(it->value().toString()));
 
         it = exifData.findKey(model);

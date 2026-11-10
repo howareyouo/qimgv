@@ -27,7 +27,6 @@ private:
     const int thumbPadding = 9;
     int thumbMarginX = 2, thumbMarginY = 4;
     void updateThumbnailPositions(int start, int end);
-    void updateThumbnailPositions();
     void setupLayout();
     ThumbnailStyle mCurrentStyle;
 

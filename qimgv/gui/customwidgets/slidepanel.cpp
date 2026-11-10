@@ -177,7 +177,3 @@ void SlidePanel::recalculateGeometry() {
 void SlidePanel::updateTriggerRect() {
     mTriggerRect = staticGeometry();
 }
-
-void SlidePanel::setOrientation() {
-
-}

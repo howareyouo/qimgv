@@ -29,30 +29,23 @@ Scaler::Scaler(Cache *_cache, QObject *parent)
 void Scaler::requestScaled(ScalerRequest req) {
     sem->acquire(1);
     if(!running) {
-//////////////////////////////////
         if(!buffered) {
             bufferedRequest = req;
             buffered = true;
-          //qDebug() << "1 requestScaled() - locking..  " <<  req.image->name();
             cache->reserve(req.image->fileName());
-          //qDebug() << "1 requestScaled() - LOCKED!  " <<  req.image->name();
             startRequest(req);
         } else if(bufferedRequest.image != req.image) {
-          //qDebug() << "2 requestScaled() - locking...  " <<  req.image->name();
             cache->reserve(req.image->fileName());
-          //qDebug() << "2 requestScaled() - LOCKED!  " <<  req.image->name();
             auto tmp = bufferedRequest;
             bufferedRequest = req;
             buffered = true;
             if(startedRequest.image != tmp.image) {
                 cache->release(tmp.image->fileName());
-              //qDebug() << "2 requestScaled() - RELEASED!  " <<  tmp.image->name();
             }
         } else {
             bufferedRequest = req;
             buffered = true;
         }
-//////////////////////////////
     } else {
         if(!buffered) {
             if(req.image != startedRequest.image)
@@ -65,7 +58,6 @@ void Scaler::requestScaled(ScalerRequest req) {
                 buffered = true;
             } else {
                 if(bufferedRequest.image != startedRequest.image) {
-                    //qDebug() << "4 RELEASING " << bufferedRequest.image->name();
                     cache->release(bufferedRequest.image->fileName());
                 }
                 if(req.image != startedRequest.image)
@@ -86,22 +78,16 @@ void Scaler::onTaskStart(ScalerRequest req) {
         buffered = false;
     }
     startedRequest = req;
-  //qDebug() << "onTaskStart(): " << req.image->name();
     sem->release(1);
 }
 
 void Scaler::onTaskFinish(QImage *scaled, ScalerRequest req) {
     sem->acquire(1);
     running = false;
-    if(buffered && bufferedRequest.image == req.image) {
-    } else {
-      //qDebug() << "onTaskFinish() - 2 releasing..  " <<  req.image->name();
-        QString name = req.image->fileName();
+    if(!buffered || bufferedRequest.image != req.image) {
         cache->release(req.image->fileName());
-      //qDebug() << "onTaskFinish() - 2 RELEASED!  " <<  name;
     }
     if(buffered) {
-      //qDebug() << "onTaskFinish - startingBuffered: " << bufferedRequest.string;
         delete scaled;
         //startRequest(bufferedRequest);
         emit startBufferedRequest();

@@ -57,7 +57,6 @@ private slots:
     void doCropDefaultAction();
 private:
     Ui::CropPanel *ui;
-    QRect cropRect;
     CropOverlay *overlay;
     QSize realSize;
 };

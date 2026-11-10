@@ -254,7 +254,8 @@ void ImageViewerV2::onAnimationTimer() {
 void ImageViewerV2::nextFrame() {
     if(!movie) {
         return;
-    } else if(movie->currentFrameNumber() == movie->frameCount() - 1) {
+    }
+    if(movie->currentFrameNumber() == movie->frameCount() - 1) {
         showAnimationFrame(0);
     } else {
         showAnimationFrame(movie->currentFrameNumber() + 1);
@@ -264,7 +265,8 @@ void ImageViewerV2::nextFrame() {
 void ImageViewerV2::prevFrame() {
     if(!movie) {
         return;
-    } else if(movie->currentFrameNumber() == 0) {
+    }
+    if(movie->currentFrameNumber() == 0) {
         showAnimationFrame(movie->frameCount() - 1);
     } else {
         showAnimationFrame(movie->currentFrameNumber() - 1);

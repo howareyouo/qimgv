@@ -83,17 +83,13 @@ QString ShortcutBuilder::modifierKeys(QInputEvent *event){
 }
 //------------------------------------------------------------------------------
 bool ShortcutBuilder::isModifier(Qt::Key key) {
-    if(key == Qt::Key_Control ||
-       key == Qt::Key_Super_L ||
-       key == Qt::Key_Super_R ||
-       key == Qt::Key_AltGr   ||
-       key == Qt::Key_Shift   ||
-       key == Qt::Key_Meta    ||
-       key == Qt::Key_Alt     )
-    {
-        return true;
-    }
-    return false;
+    return key == Qt::Key_Control ||
+           key == Qt::Key_Super_L ||
+           key == Qt::Key_Super_R ||
+           key == Qt::Key_AltGr   ||
+           key == Qt::Key_Shift   ||
+           key == Qt::Key_Meta    ||
+           key == Qt::Key_Alt;
 }
 //------------------------------------------------------------------------------
 QString ShortcutBuilder::fromEventNativeScanCode(QKeyEvent *event) {

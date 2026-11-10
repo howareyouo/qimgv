@@ -11,10 +11,9 @@ bool Cache::insert(std::shared_ptr<Image> img) {
     if(img) {
         if(items.contains(img->filePath())) {
             return false;
-        } else {
-            items.insert(img->filePath(), new CacheItem(img));
-            return true;
         }
+        items.insert(img->filePath(), new CacheItem(img));
+        return true;
     }
     // TODO: what state returns here ??
     return true;

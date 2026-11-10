@@ -91,7 +91,6 @@ private:
     DirectoryManager dirManager;
     Loader loader;
     Cache cache;
-    FileListSource fileListSource;
 
 private slots:
     void onImageReady(std::shared_ptr<Image> img, const QString &path);

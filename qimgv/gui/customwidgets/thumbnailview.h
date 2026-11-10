@@ -84,7 +84,6 @@ private:
     bool mCropThumbnails, mouseReleaseSelect;
     ThumbnailSelectMode selectMode;
     QPoint dragStartPos;
-    ThumbnailWidget* dragTarget;
 
     void createScrollTimeLine();
     QElapsedTimer scrollFrameTimer;

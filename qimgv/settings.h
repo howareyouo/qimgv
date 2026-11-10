@@ -317,7 +317,6 @@ private:
     QPalette mSystemPalette;
     void loadTheme();
     void saveTheme();
-    void createColorVariants();
     void applyAppPalette();
 
     void setupCache();

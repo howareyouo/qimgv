@@ -33,7 +33,7 @@ void ThumbnailStripProxy::init() {
 }
 
 bool ThumbnailStripProxy::isInitialized() {
-    return (thumbnailStrip != nullptr);
+    return thumbnailStrip != nullptr;
 }
 
 void ThumbnailStripProxy::populate(int count) {

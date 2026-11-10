@@ -60,36 +60,31 @@ ViewerWidget::ViewerWidget(QWidget *parent)
 QRect ViewerWidget::imageRect() {
     if(imageViewer && currentWidget == IMAGEVIEWER)
         return imageViewer->scaledRectR();
-    else
-        return QRect(0,0,0,0);
+    return QRect(0,0,0,0);
 }
 
 float ViewerWidget::currentScale() {
     if(currentWidget == IMAGEVIEWER)
         return imageViewer->currentScale();
-    else
-        return 1.0f;
+    return 1.0f;
 }
 
 QSize ViewerWidget::sourceSize() {
     if(currentWidget == IMAGEVIEWER)
         return imageViewer->sourceSize();
-    else
-        return QSize(0,0);
+    return QSize(0,0);
 }
 
 QSize ViewerWidget::originalSize() {
     if(currentWidget == IMAGEVIEWER)
         return imageViewer->originalSizeR();
-    else
-        return QSize(0,0);
+    return QSize(0,0);
 }
 
 bool ViewerWidget::lastZoomAtCursor() {
     if(currentWidget == IMAGEVIEWER)
         return imageViewer->lastZoomAtCursor();
-    else
-        return false;
+    return false;
 }
 
 void ViewerWidget::centerImage() {
@@ -107,18 +102,6 @@ void ViewerWidget::enableImageViewer() {
     }
 }
 
-void ViewerWidget::disableImageViewer() {
-    if(currentWidget == IMAGEVIEWER) {
-        currentWidget = UNSET;
-        imageViewer->closeImage();
-        imageViewer->hide();
-        zoomIndicator->hide();
-        disconnect(imageViewer.get(), &ImageViewerV2::durationChanged, videoControls, &VideoControlsProxyWrapper::setPlaybackDuration);
-        disconnect(imageViewer.get(), &ImageViewerV2::frameChanged,    videoControls, &VideoControlsProxyWrapper::setPlaybackPosition);
-        disconnect(imageViewer.get(), &ImageViewerV2::animationPaused, videoControls, &VideoControlsProxyWrapper::onPlaybackPaused);
-    }
-}
-
 void ViewerWidget::onScaleChanged(qreal scale) {
     if(!this->isVisible())
         return;
@@ -126,7 +109,7 @@ void ViewerWidget::onScaleChanged(qreal scale) {
         zoomIndicator->setScale(scale);
         if(settings->zoomIndicatorMode() == ZoomIndicatorMode::INDICATOR_ENABLED)
             zoomIndicator->show();
-        else if((settings->zoomIndicatorMode() == ZoomIndicatorMode::INDICATOR_AUTO))
+        else if(settings->zoomIndicatorMode() == ZoomIndicatorMode::INDICATOR_AUTO)
             zoomIndicator->show(1500);
     } else {
         zoomIndicator->hide();
@@ -327,7 +310,6 @@ void ViewerWidget::hideCursor() {
             videoControls->hide();
         } else {
             QPoint posMapped = mapFromGlobal(QCursor::pos());
-            //if(settings->enableClickZoneThing())
             // ignore when we are hovering the click zone
             if(clickZoneOverlay->leftZone().contains(posMapped) ||
                 clickZoneOverlay->leftZone().contains(posMapped))

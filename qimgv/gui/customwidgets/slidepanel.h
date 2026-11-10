@@ -58,8 +58,6 @@ protected:
     virtual void updateTriggerRect();
 
 private:
-    void setOrientation();
-    Qt::Orientation mOrientation;
     QRect mStaticGeometry;
     qreal panelVisibleOpacity = 1.0;
     QPoint startPosition, endPosition;

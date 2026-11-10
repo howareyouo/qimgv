@@ -65,7 +65,7 @@ void TreeViewCustom::updateScrollbarStyle() {
     overlayScrollbar.setGeometry(width() - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, height());
     overlayScrollbar.setStyleSheet( "QScrollBar { background-color: transparent; } QScrollBar::handle:vertical { background-color: "+ handle +" } QScrollBar::handle:vertical:hover { background-color: " + hover + " }" );
 
-    overlayScrollbar.setVisible( (this->verticalScrollBar()->maximum()) );
+    overlayScrollbar.setVisible(this->verticalScrollBar()->maximum());
 }
 
 void TreeViewCustom::keyPressEvent(QKeyEvent* event) {

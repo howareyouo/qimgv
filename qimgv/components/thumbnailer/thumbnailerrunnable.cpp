@@ -1,5 +1,17 @@
 #include "thumbnailerrunnable.h"
 
+namespace {
+
+// clip rect used to crop a thumbnail to a square
+QRect thumbnailClipRect(int size, QSize scaledSize) {
+    QRect clip(0, 0, size, size);
+    QRect scaledRect(QPoint(0,0), scaledSize);
+    clip.moveCenter(scaledRect.center());
+    return clip;
+}
+
+} // namespace
+
 ThumbnailerRunnable::ThumbnailerRunnable(ThumbnailCache* _cache, QString _path, int _size, bool _crop, bool _force) :
     path(_path),
     size(_size),
@@ -99,10 +111,7 @@ std::pair<QImage*, QSize> ThumbnailerRunnable::createThumbnail(QString path, con
         QSize scaledSize = reader->size().scaled(size, size, ARMode);
         reader->setScaledSize(scaledSize);
         if(squared) {
-            QRect clip(0, 0, size, size);
-            QRect scaledRect(QPoint(0,0), scaledSize);
-            clip.moveCenter(scaledRect.center());
-            reader->setScaledClipRect(clip);
+            reader->setScaledClipRect(thumbnailClipRect(size, scaledSize));
         }
         originalSize = reader->size();
         result = new QImage();
@@ -134,11 +143,8 @@ std::pair<QImage*, QSize> ThumbnailerRunnable::createThumbnail(QString path, con
         originalSize = fullSize->size();
         QSize scaledSize = fullSize->size().scaled(size, size, ARMode);
         if(squared) {
-            QRect clip(0, 0, size, size);
-            QRect scaledRect(QPoint(0,0), scaledSize);
-            clip.moveCenter(scaledRect.center());
             QImage scaled = QImage(fullSize->scaled(scaledSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-            result = ImageLib::croppedRaw(&scaled, clip);
+            result = ImageLib::croppedRaw(&scaled, thumbnailClipRect(size, scaledSize));
         } else {
             result = new QImage(fullSize->scaled(scaledSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
         }

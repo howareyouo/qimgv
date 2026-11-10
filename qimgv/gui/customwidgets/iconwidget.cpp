@@ -58,8 +58,7 @@ void IconWidget::loadIcon() {
 QSize IconWidget::minimumSizeHint() const {
     if(pixmap && !pixmap->isNull())
         return pixmap->size() / dpr;
-    else
-        return QWidget::minimumSizeHint();
+    return QWidget::minimumSizeHint();
 }
 
 void IconWidget::setIconOffset(int x, int y) {

@@ -1041,8 +1041,7 @@ bool MW::showConfirmation(QString title, QString msg) {
     msgBox.setModal(true);
     if(msgBox.exec() == QMessageBox::Yes)
         return true;
-    else
-        return false;
+    return false;
 }
 
 void MW::readSettings() {

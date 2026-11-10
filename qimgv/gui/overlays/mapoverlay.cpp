@@ -145,7 +145,6 @@ void MapOverlay::animateVisible(bool isVisible) {
         }
 
         d->opacityAnimation->start();
-        //d->transitionAnimation->start();
     }
     //if (QWidget::isVisible() == isVisible) // already in this state
     //    return;

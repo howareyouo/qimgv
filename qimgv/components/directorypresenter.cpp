@@ -1,5 +1,20 @@
 #include "directorypresenter.h"
 
+static void replaceItemAndReselect(IDirectoryView *view, int indexFrom, int indexTo) {
+    auto oldSelection = view->selection();
+    view->removeItem(indexFrom);
+    view->insertItem(indexTo);
+    // re-select if needed
+    if(oldSelection.contains(indexFrom)) {
+        if(oldSelection.count() == 1) {
+            view->select(indexTo);
+            view->focusOn(indexTo);
+        } else if(oldSelection.count() > 1) {
+            view->select(view->selection() << indexTo);
+        }
+    }
+}
+
 DirectoryPresenter::DirectoryPresenter(QObject *parent) : QObject(parent), mShowDirs(false) {
     connect(&thumbnailer, &Thumbnailer::thumbnailReady, this, &DirectoryPresenter::onThumbnailReady);
 }
@@ -85,18 +100,7 @@ void DirectoryPresenter::onFileRenamed(QString fromPath, int indexFrom, QString 
         indexFrom += model->dirCount();
         indexTo += model->dirCount();
     }
-    auto oldSelection = view->selection();
-    view->removeItem(indexFrom);
-    view->insertItem(indexTo);
-    // re-select if needed
-    if(oldSelection.contains(indexFrom)) {
-        if(oldSelection.count() == 1) {
-            view->select(indexTo);
-            view->focusOn(indexTo);
-        } else if(oldSelection.count() > 1) {
-            view->select(view->selection() << indexTo);
-        }
-    }
+    replaceItemAndReselect(view.get(), indexFrom, indexTo);
 }
 
 void DirectoryPresenter::onFileAdded(QString filePath) {
@@ -125,18 +129,7 @@ void DirectoryPresenter::onDirRenamed(QString fromPath, int indexFrom, QString t
     Q_UNUSED(toPath)
     if(!view || !mShowDirs)
         return;
-    auto oldSelection = view->selection();
-    view->removeItem(indexFrom);
-    view->insertItem(indexTo);
-    // re-select if needed
-    if(oldSelection.contains(indexFrom)) {
-        if(oldSelection.count() == 1) {
-            view->select(indexTo);
-            view->focusOn(indexTo);
-        } else if(oldSelection.count() > 1) {
-            view->select(view->selection() << indexTo);
-        }
-    }
+    replaceItemAndReselect(view.get(), indexFrom, indexTo);
 }
 
 void DirectoryPresenter::onDirAdded(QString dirPath) {

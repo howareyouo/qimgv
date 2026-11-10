@@ -24,7 +24,6 @@ public slots:
 
 private:
     Ui::ContextMenu *ui;
-    QTimer mTimer;
 
     void fillOpenWithMenu();
 

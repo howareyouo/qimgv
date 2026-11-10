@@ -18,10 +18,7 @@ signals:
 
 private:
     HANDLE hDir;
-    WCHAR buffer[1024];
-    DWORD bytesReturned;
     uint POLL_RATE_MS = 1000;
-    void processEvent(FILE_NOTIFY_INFORMATION *fni);
     void freeHandle();
 };
 

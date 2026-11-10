@@ -56,8 +56,6 @@ private:
     const int CURSOR_HIDE_TIMEOUT_MS = 1000;
     bool mIsFullscreen;
 
-    void disableImageViewer();
-
     QRect videoControlsArea();
 
     bool eventFilter(QObject *object, QEvent *event);

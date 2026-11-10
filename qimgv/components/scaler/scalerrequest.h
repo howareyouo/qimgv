@@ -15,9 +15,7 @@ public:
     ScalingFilter filter;
 
     bool operator==(const ScalerRequest &another) const {
-        if(another.image == image && another.size == size && another.filter == filter)
-            return true;
-        return false;
+        return another.image == image && another.size == size && another.filter == filter;
     }
 };
 

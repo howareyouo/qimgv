@@ -603,7 +603,7 @@ ImageFitMode Settings::imageFitMode() {
 }
 
 void Settings::setImageFitMode(ImageFitMode mode) {
-    int modeInt = static_cast<ImageFitMode>(mode);
+    int modeInt = static_cast<int>(mode);
     if(modeInt < 0 || modeInt > 3) {
         qDebug() << "Settings: Invalid fit mode ( " + QString::number(modeInt) + " ). Resetting to default.";
         modeInt = 0;
@@ -830,8 +830,7 @@ void Settings::setExpandLimit(int value) {
 }
 //------------------------------------------------------------------------------
 int Settings::JPEGSaveQuality() {
-    int quality = std::clamp(settings->settingsConf->value("JPEGSaveQuality", 95).toInt(), 0, 100);
-    return quality;
+    return std::clamp(settings->settingsConf->value("JPEGSaveQuality", 95).toInt(), 0, 100);
 }
 
 void Settings::setJPEGSaveQuality(int value) {

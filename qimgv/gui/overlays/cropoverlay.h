@@ -60,7 +60,6 @@ private:
     qreal dpr;
     QPointF ar;
 
-    QPoint setInsidePoint(QPoint, QRect);
     QRect placeInside(QRect what, QRect where);
     void drawSelection(QPainter*);
     void drawHandles(QBrush&, QPainter*);

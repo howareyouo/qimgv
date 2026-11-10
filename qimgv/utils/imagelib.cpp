@@ -1,6 +1,7 @@
 #include "imagelib.h"
 #include "fileoperations.h"
 #include <QFile>
+#include <utility>
 
 void ImageLib::recolor(QPixmap &pixmap, QColor color) {
     QPainter p(&pixmap);
@@ -31,9 +32,8 @@ QImage* ImageLib::croppedRaw(const QImage *src, QRect newRect) {
         QImage *img = new QImage(newRect.size(), src->format());
         *img = src->copy(newRect);
         return img;
-    } else {
-        return new QImage();
     }
+    return new QImage();
 }
 //------------------------------------------------------------------------------
 QImage* ImageLib::cropped(std::shared_ptr<const QImage> src, QRect newRect) {
@@ -43,8 +43,7 @@ QImage* ImageLib::cropped(std::shared_ptr<const QImage> src, QRect newRect) {
 QImage* ImageLib::flippedHRaw(const QImage *src) {
     if(!src)
         return new QImage();
-    else
-        return new QImage(src->mirrored(true, false));
+    return new QImage(src->mirrored(true, false));
 }
 //------------------------------------------------------------------------------
 QImage* ImageLib::flippedH(std::shared_ptr<const QImage> src) {
@@ -54,15 +53,17 @@ QImage* ImageLib::flippedH(std::shared_ptr<const QImage> src) {
 QImage* ImageLib::flippedVRaw(const QImage *src) {
     if(!src)
         return new QImage();
-    else
-        return new QImage(src->mirrored(false, true));
+    return new QImage(src->mirrored(false, true));
 }
 //------------------------------------------------------------------------------
 QImage* ImageLib::flippedV(std::shared_ptr<const QImage> src) {
     return flippedVRaw(src.get());
 }
 //------------------------------------------------------------------------------
-std::unique_ptr<const QImage> ImageLib::exifRotated(std::unique_ptr<const QImage> src, int orientation) {
+namespace {
+// both overloads below only differ in the pointer type they own
+template<typename T>
+std::unique_ptr<T> exifRotatedRaw(std::unique_ptr<T> src, int orientation) {
     switch(orientation) {
     case 1: {
         src.reset(ImageLib::flippedHRaw(src.get()));
@@ -92,58 +93,17 @@ std::unique_ptr<const QImage> ImageLib::exifRotated(std::unique_ptr<const QImage
     } break;
     }
     return src;
+}
+} // namespace
+//------------------------------------------------------------------------------
+std::unique_ptr<const QImage> ImageLib::exifRotated(std::unique_ptr<const QImage> src, int orientation) {
+    return exifRotatedRaw(std::move(src), orientation);
 }
 //------------------------------------------------------------------------------
 std::unique_ptr<QImage> ImageLib::exifRotated(std::unique_ptr<QImage> src, int orientation) {
-    switch(orientation) {
-    case 1: {
-        src.reset(ImageLib::flippedHRaw(src.get()));
-    } break;
-    case 2: {
-        src.reset(ImageLib::flippedVRaw(src.get()));
-    } break;
-    case 3: {
-        // flipH + flipV is a 180 degree rotation, do it in a single pass
-        src.reset(new QImage(src->mirrored(true, true)));
-    } break;
-    case 4: {
-        src.reset(ImageLib::rotatedRaw(src.get(), 90));
-    } break;
-    case 5: {
-        src.reset(ImageLib::flippedHRaw(src.get()));
-        src.reset(ImageLib::rotatedRaw(src.get(), 90));
-    } break;
-    case 6: {
-        src.reset(ImageLib::flippedVRaw(src.get()));
-        src.reset(ImageLib::rotatedRaw(src.get(), 90));
-    } break;
-    case 7: {
-        src.reset(ImageLib::rotatedRaw(src.get(), -90));
-    } break;
-    default: {
-    } break;
-    }
-    return src;
+    return exifRotatedRaw(std::move(src), orientation);
 }
 //------------------------------------------------------------------------------
-/*
-
-QImage *ImageLib::cropped(QRect newRect, QRect targetRes, bool upscaled) {
-    QImage *cropped = new QImage(targetRes.size(), image->format());
-    if(upscaled) {
-        QImage temp = image->copy(newRect);
-        *cropped = temp.scaled(targetRes.size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        QRect target(QPoint(0, 0), targetRes.size());
-        target.moveCenter(cropped->rect().center());
-        *cropped = cropped->copy(target);
-    } else {
-        newRect.moveCenter(image->rect().center());
-        *cropped = image->copy(newRect);
-    }
-    return cropped;
-}
-*/
-
 QImage* ImageLib::scaled(std::shared_ptr<const QImage> source, QSize destSize, ScalingFilter filter) {
     if(!source)
         return new QImage();
@@ -191,13 +151,13 @@ QImage* ImageLib::scaled_CV(std::shared_ptr<const QImage> source, QSize destSize
     if(!source)
         return new QImage();
     QtOcv::MatColorOrder order;
-    cv::Mat srcMat = QtOcv::image2Mat_shared(*source.get(), &order);
+    cv::Mat srcMat = QtOcv::image2Mat_shared(*source, &order);
     cv::Size destSizeCv(destSize.width(), destSize.height());
     QImage *dest = new QImage();
     if(destSize == source->size()) {
         // TODO: should this return a copy?
         //result.reset(new StaticImageContainer(std::make_shared<cv::Mat>(srcMat)));
-    } else if(destSize.width() > source.get()->width()) { // upscale
+    } else if(destSize.width() > source->width()) { // upscale
         cv::Mat dstMat(destSizeCv, srcMat.type());
         cv::resize(srcMat, dstMat, destSizeCv, 0, 0, filter);
         *dest = QtOcv::mat2Image(dstMat, order, source->format());

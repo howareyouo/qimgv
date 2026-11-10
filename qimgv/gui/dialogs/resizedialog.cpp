@@ -168,7 +168,7 @@ void ResizeDialog::percentChanged(double newPercent) {
 }
 
 void ResizeDialog::keyPressEvent(QKeyEvent *event) {
-    if((event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return)) {
+    if(event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return) {
         sizeSelect();
     } else if(event->key() == Qt::Key_Escape) {
         reject();

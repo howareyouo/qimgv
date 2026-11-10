@@ -38,7 +38,6 @@ private:
     bool hiResPixmaps = false;
     const int zoneSize = 110;
     bool isPressed = false;
-    bool leftHovered = false, rightHovered = false;
     bool drawZones = true;
     ActiveHighlightZone activeZone = HIGHLIGHT_NONE;
     void drawPixmap(QPainter &p, QPixmap *pixmap, QRect rect);

@@ -198,8 +198,7 @@ void ThumbnailView::clearSelection() {
 int ThumbnailView::lastSelected() {
     if(!selection().count())
         return -1;
-    else
-        return selection().last();
+    return selection().last();
 }
 
 int ThumbnailView::itemCount() {
@@ -233,34 +232,7 @@ void ThumbnailView::populate(int newCount) {
     QElapsedTimer t;
     t.start();
     if(newCount >= 0) {
-        /* test this later
-        // reuse existing items
-        auto currentCount = thumbnails.count();
-        if(currentCount > newCount) {
-            qDebug() << this << "removing";
-            for(auto i = currentCount - 1; i >= newCount; i--) {
-                //removeItemFromLayout(i); // slow. is this needed?
-                delete thumbnails.takeLast();
-            }
-            // reset existing
-            QList<ThumbnailWidget*>::iterator i;
-            for(i = thumbnails.begin(); i != thumbnails.end(); ++i)
-                (*i)->reset();
-        } else if(currentCount <= newCount) {
-            // reset existing
-            QList<ThumbnailWidget*>::iterator i;
-            for(i = thumbnails.begin(); i != thumbnails.end(); ++i)
-                (*i)->reset();
-            qDebug() << this << "adding";
-            for(auto i = currentCount; i < newCount; i++) {
-                ThumbnailWidget *widget = createThumbnailWidget();
-                widget->setThumbnailSize(mThumbnailSize);
-                thumbnails.append(widget);
-                addItemToLayout(widget, i);
-            }
-        }
-        */
-
+        // test this later: reuse existing items instead of recreating all of them
         if(newCount == thumbnails.count()) {
             QList<ThumbnailWidget*>::iterator i;
             for (i = thumbnails.begin(); i != thumbnails.end(); ++i) {
@@ -430,25 +402,15 @@ int ThumbnailView::thumbnailSize() {
 }
 
 bool ThumbnailView::atSceneStart() {
-    if(mOrientation == Qt::Horizontal) {
-        if(viewportTransform().dx() == 0.0)
-            return true;
-    } else {
-        if(viewportTransform().dy() == 0.0)
-            return true;
-    }
-    return false;
+    if(mOrientation == Qt::Horizontal)
+        return viewportTransform().dx() == 0.0;
+    return viewportTransform().dy() == 0.0;
 }
 
 bool ThumbnailView::atSceneEnd() {
-    if(mOrientation == Qt::Horizontal) {
-        if(viewportTransform().dx() == viewport()->width() - sceneRect().width())
-            return true;
-    } else {
-        if(viewportTransform().dy() == viewport()->height() - sceneRect().height())
-            return true;
-    }
-    return false;
+    if(mOrientation == Qt::Horizontal)
+        return viewportTransform().dx() == viewport()->width() - sceneRect().width();
+    return viewportTransform().dy() == viewport()->height() - sceneRect().height();
 }
 
 bool ThumbnailView::checkRange(int pos) {

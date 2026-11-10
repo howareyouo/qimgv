@@ -3,7 +3,6 @@
 #include <QWidget>
 #include <QPainter>
 #include <QPen>
-#include <QDebug>
 #include <QPaintEvent>
 
 class MapOverlay : public QWidget

@@ -15,8 +15,6 @@
 #include "dummywatcher.h"
 #endif
 
-#define TAG         "[DirectoryWatcher]"
-
 DirectoryWatcherPrivate::DirectoryWatcherPrivate(DirectoryWatcher* qq, WatcherWorker* w) :
     q_ptr(qq),
     worker(w),
@@ -67,7 +65,6 @@ void DirectoryWatcher::observe()
         d->worker->setRunning(true);
         d->workerThread->start();
     }
-    //qDebug() << TAG << "Observing path:" << d->currentDirectory;
 }
 
 void DirectoryWatcher::stopObserving()

@@ -5,7 +5,6 @@ WindowsWorker::WindowsWorker() : WatcherWorker() {
 }
 
 void WindowsWorker::setDirectoryHandle(HANDLE hDir) {
-    //qDebug() << "setHandle" << this->hDir << " -> " << hDir;
     freeHandle();
     this->hDir = hDir;
 }
@@ -32,7 +31,6 @@ void WindowsWorker::run() {
     ::ResetEvent(ovl.hEvent); // is this needed?
 
     while(isRunning) {
-        //qDebug() << "_1";
         bPending = ReadDirectoryChangesW(hDir,
                                          &buffer[0],
                                          buffer.size(),
@@ -41,7 +39,6 @@ void WindowsWorker::run() {
                                          &dwBytes,
                                          &ovl,
                                          nullptr);
-        //qDebug() << "_2";
         if(!bPending) {
             error = GetLastError();
             if(error == ERROR_IO_INCOMPLETE) {
@@ -49,7 +46,6 @@ void WindowsWorker::run() {
                 continue;
             }
         }
-        //qDebug() << "_3";
         bool WAIT = false;
         if(GetOverlappedResult(hDir, &ovl, &dwBytes, WAIT)) {
             bPending = false;

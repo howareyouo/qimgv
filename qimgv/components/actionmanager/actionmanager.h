@@ -65,7 +65,6 @@ private:
     QHash<QString, std::function<void()>> handlers;
 
     static void initShortcuts();
-    QString modifierKeys(QEvent *event);
     bool invokeActionForShortcut(const QString &action);
     void validateShortcuts();
     void readShortcuts();

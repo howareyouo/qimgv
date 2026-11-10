@@ -236,7 +236,6 @@ void ThumbnailWidget::drawHighlight(QPainter *painter) {
         QPen pen(settings->colorScheme().accent, 2);
         painter->setPen(pen);
         painter->drawRect(bgRect.adjusted(1,1,-1,-1)); // 2px pen
-        //painter->drawRect(highlightRect.adjusted(0.5,0.5,-0.5,-0.5)); // 1px pen
         painter->setOpacity(op);
         painter->setRenderHints(hints);
     }

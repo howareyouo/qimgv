@@ -1,5 +1,4 @@
 #include "imagestatic.h"
-#include <time.h>
 
 ImageStatic::ImageStatic(QString _path)
     : Image(_path)

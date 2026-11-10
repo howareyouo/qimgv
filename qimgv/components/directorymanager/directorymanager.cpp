@@ -153,8 +153,7 @@ bool DirectoryManager::setDirectoryRecursive(QString dirPath) {
 QString DirectoryManager::directoryPath() const {
     if(mListSource == SOURCE_DIRECTORY || mListSource == SOURCE_DIRECTORY_RECURSIVE)
         return mDirectoryPath;
-    else
-        return "";
+    return "";
 }
 
 int DirectoryManager::indexOfFile(QString filePath) const {
@@ -260,8 +259,7 @@ unsigned long DirectoryManager::dirCount() const {
 const FSEntry &DirectoryManager::fileEntryAt(int index) const {
     if(checkFileRange(index))
         return fileEntryVec.at(index);
-    else
-        return defaultEntry;
+    return defaultEntry;
 }
 
 QDateTime DirectoryManager::lastModified(QString filePath) const {
@@ -278,19 +276,11 @@ bool DirectoryManager::isSupportedFile(QString path) const {
 }
 
 bool DirectoryManager::isFile(QString path) const {
-    if(!std::filesystem::exists(toStdString(path)))
-        return false;
-    if(!std::filesystem::is_regular_file(toStdString(path)))
-        return false;
-    return true;
+    return std::filesystem::exists(toStdString(path)) && std::filesystem::is_regular_file(toStdString(path));
 }
 
 bool DirectoryManager::isDir(QString path) const {
-    if(!std::filesystem::exists(toStdString(path)))
-        return false;
-    if(!std::filesystem::is_directory(toStdString(path)))
-        return false;
-    return true;
+    return std::filesystem::exists(toStdString(path)) && std::filesystem::is_directory(toStdString(path));
 }
 
 bool DirectoryManager::isEmpty() const {

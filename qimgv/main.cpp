@@ -1,7 +1,6 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QStyleFactory>
-#include <QEvent>
 
 #include "appversion.h"
 #include "settings.h"
@@ -62,10 +61,6 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::RoundPreferFloor);
 #endif
 #endif
-
-    //qDebug() << qgetenv("QT_SCALE_FACTOR");
-    //qDebug() << qgetenv("QT_SCREEN_SCALE_FACTORS");
-    //qDebug() << qgetenv("QT_ENABLE_HIGHDPI_SCALING");
 
 #ifdef __APPLE__
     MacOSApplication a(argc, argv);

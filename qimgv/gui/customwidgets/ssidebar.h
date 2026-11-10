@@ -20,7 +20,6 @@ public:
 private:
     QBoxLayout *layout;
     QList<SSideBarItem *> entries;
-    Qt::Orientation orientation = Qt::Vertical;
     void selectEntryAt(QPoint pos);
 
 signals:

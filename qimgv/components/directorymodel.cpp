@@ -1,8 +1,7 @@
 #include "directorymodel.h"
 
 DirectoryModel::DirectoryModel(QObject *parent) :
-    QObject(parent),
-    fileListSource(SOURCE_DIRECTORY)
+    QObject(parent)
 {
     scaler = new Scaler(&cache);
 
@@ -131,7 +130,6 @@ void DirectoryModel::removeFile(const QString &filePath, bool trash, FileOpResul
     if(result != FileOpResult::SUCCESS)
         return;
     dirManager.removeFileEntry(filePath);
-    return;
 }
 
 void DirectoryModel::renameEntry(const QString &oldPath, const QString &newName, bool force, FileOpResult &result) {
@@ -156,7 +154,6 @@ void DirectoryModel::removeDir(const QString &dirPath, bool trash, bool recursiv
     if(result != FileOpResult::SUCCESS)
         return;
     dirManager.removeDirEntry(dirPath);
-    return;
 }
 
 void DirectoryModel::copyFileTo(const QString &srcFile, const QString &destDirPath, bool force, FileOpResult &result) {
@@ -294,7 +291,7 @@ std::shared_ptr<Image> DirectoryModel::getImage(QString filePath) {
 }
 
 void DirectoryModel::updateImage(QString filePath, std::shared_ptr<Image> img) {
-    if(containsFile(filePath) /*& cache.contains(filePath)*/) {
+    if(containsFile(filePath)) {
         if(!cache.contains(filePath)) {
             cache.insert(img);
         } else {

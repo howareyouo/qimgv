@@ -1,5 +1,4 @@
 #include "imageanimated.h"
-#include <time.h>
 
 // TODO: this class is kinda useless now. redesign?
 

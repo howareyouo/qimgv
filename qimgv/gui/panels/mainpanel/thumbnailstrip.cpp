@@ -64,10 +64,6 @@ void ThumbnailStrip::removeAll() {
     thumbnails.clear();
 }
 
-void ThumbnailStrip::updateThumbnailPositions() {
-    updateThumbnailPositions(0, thumbnails.count() - 1);
-}
-
 void ThumbnailStrip::updateThumbnailPositions(int start, int end) {
     if(start > end || !checkRange(start) || !checkRange(end))
         return;
@@ -156,9 +152,8 @@ QSize ThumbnailStrip::itemSize() {
         w.setThumbStyle(mCurrentStyle);
         w.setThumbnailSize(mThumbnailSize);
         return w.boundingRect().size().toSize();
-    } else {
-        return thumbnails.at(0)->boundingRect().size().toSize();
     }
+    return thumbnails.at(0)->boundingRect().size().toSize();
 }
 
 void ThumbnailStrip::resizeEvent(QResizeEvent *event) {
