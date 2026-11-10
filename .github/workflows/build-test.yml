@@ -79,7 +79,7 @@ jobs:
       - name: Debug failing tests with gdb
         if: failure()
         run: |
-          for t in actiontable_tests actionmanager_tests unit_tests; do
+          for t in actiontable_tests actionmanager_tests; do
             echo "=== gdb $t ==="
             gdb -batch -ex run -ex bt "build/qimgv/tests/$t.exe" || true
           done

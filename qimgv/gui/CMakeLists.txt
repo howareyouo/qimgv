@@ -49,7 +49,6 @@ target_sources(qimgv PRIVATE
     overlays/fullscreeninfooverlayproxy.cpp
     overlays/imageinfooverlay.cpp
     overlays/imageinfooverlayproxy.cpp
-    overlays/mapoverlay.cpp
     overlays/renameoverlay.cpp
     overlays/saveconfirmoverlay.cpp
     overlays/videocontrols.cpp

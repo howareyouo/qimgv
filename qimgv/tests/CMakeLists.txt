@@ -30,10 +30,3 @@ add_test(NAME actiontable_tests COMMAND actiontable_tests)
 add_executable(actionmanager_tests test_actionmanager.cpp)
 target_link_libraries(actionmanager_tests PRIVATE qimgv_test_support)
 add_test(NAME actionmanager_tests COMMAND actionmanager_tests)
-
-add_executable(unit_tests
-    test_mapoverlay.cpp
-    ../gui/overlays/mapoverlay.cpp
-)
-target_link_libraries(unit_tests PRIVATE qimgv_test_support)
-add_test(NAME unit_tests COMMAND unit_tests)

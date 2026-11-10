@@ -7,10 +7,6 @@ ScriptManager::ScriptManager(QObject *parent)
 {
 }
 
-ScriptManager::~ScriptManager() {
-    saveScripts();
-}
-
 ScriptManager *ScriptManager::getInstance() {
     if(!scriptManager) {
         scriptManager = new ScriptManager();
