@@ -111,6 +111,10 @@ ImageViewerV2::ImageViewerV2(QWidget *parent) : QGraphicsView(parent),
 
     readSettings();
     connect(settings, &Settings::settingsChanged, this, &ImageViewerV2::readSettings);
+
+    // devicePixelRatioF() is wrong on wayland until the first paint, so watch the
+    // viewport for DevicePixelRatioChange (see eventFilter())
+    viewport()->installEventFilter(this);
 }
 
 ImageViewerV2::~ImageViewerV2() {

@@ -11,7 +11,9 @@
 #include <functional>
 
 #ifdef __WIN32
-#include <tchar.h>
+#include <windows.h>
+#include <cwchar>
+#include <string>
 #endif
 
 namespace {
@@ -1051,17 +1053,19 @@ void Core::setWallpaper() {
     }
 #ifdef __WIN32
     // set fit mode (registry)
-    LONG status;
     HKEY hKey;
-    status = RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Control Panel\\Desktop"), 0, KEY_WRITE, &hKey);
-    if((status == ERROR_SUCCESS) && (hKey != NULL)) {
-        LPCTSTR value = TEXT("WallpaperStyle");
-        LPCTSTR data  = TEXT("10");
-        status = RegSetValueEx(hKey, value, 0, REG_SZ, (LPBYTE)data, _tcslen(data) + 1);
+    if(RegOpenKeyExW(HKEY_CURRENT_USER, L"Control Panel\\Desktop", 0, KEY_WRITE, &hKey) == ERROR_SUCCESS) {
+        const wchar_t *style = L"10";
+        // RegSetValueEx takes a byte count, not a character count
+        const DWORD styleSizeInBytes = static_cast<DWORD>((std::wcslen(style) + 1) * sizeof(wchar_t));
+        RegSetValueExW(hKey, L"WallpaperStyle", 0, REG_SZ,
+                       reinterpret_cast<const BYTE*>(style), styleSizeInBytes);
         RegCloseKey(hKey);
     }
     // set wallpaper path
-    SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, (char*)(selectedPath().toStdWString().c_str()), SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
+    std::wstring wallpaperPath = selectedPath().toStdWString();
+    SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, wallpaperPath.data(),
+                          SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
 #else
     auto session = qgetenv("DESKTOP_SESSION").toLower();
     if(session.contains("plasma"))

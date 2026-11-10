@@ -10,6 +10,7 @@ class ZoomIndicatorOverlay : public OverlayWidget {
     Q_OBJECT
 public:
     explicit ZoomIndicatorOverlay(FloatingWidgetContainer *parent = nullptr);
+    ~ZoomIndicatorOverlay();
 
     void setScale(qreal scale);
     void show();

@@ -26,7 +26,6 @@ class ActionManager : public QObject {
     Q_OBJECT
 public:
     static ActionManager* getInstance();
-    ~ActionManager();
     bool processEvent(QInputEvent*);
     void addShortcut(const QString &keys, const QString &action);
     void resetDefaults();

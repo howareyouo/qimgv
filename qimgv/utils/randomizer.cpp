@@ -1,6 +1,6 @@
 #include "randomizer.h"
 
-Randomizer::Randomizer() {
+Randomizer::Randomizer() : currentIndex(0) {
     setCount(0);
 }
 
@@ -57,9 +57,15 @@ void Randomizer::print() {
 }
 
 int Randomizer::next() {
+    if(vec.empty())
+        return -1;
+    if(vec.size() == 1) {
+        currentIndex = 0;
+        return vec[0];
+    }
     // re-shuffle when needed
     // because vector gets rearranged this will break prev()
-    while(currentIndex == vec.size() - 1) {
+    while(currentIndex == static_cast<int>(vec.size()) - 1) {
         int currentItem = vec[currentIndex];
         shuffle();
         setCurrent(currentItem);
@@ -69,6 +75,14 @@ int Randomizer::next() {
 }
 
 int Randomizer::prev() {
+    if(vec.empty())
+        return -1;
+    if(currentIndex < 0)
+        currentIndex = 0;
+    if(vec.size() == 1) {
+        currentIndex = 0;
+        return vec[0];
+    }
     while(currentIndex == 0) {
         int currentItem = vec[currentIndex];
         shuffle();

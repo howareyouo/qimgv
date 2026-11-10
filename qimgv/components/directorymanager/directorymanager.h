@@ -100,7 +100,7 @@ private:
     DirectoryWatcher* watcher;
     void readSettings();
     SortingMode mSortingMode;
-    FileListSource mListSource;
+    FileListSource mListSource = SOURCE_DIRECTORY;
     void loadEntryList(QString directoryPath, bool recursive);
 
     bool path_entry_compare(const FSEntry &e1, const FSEntry &e2) const;

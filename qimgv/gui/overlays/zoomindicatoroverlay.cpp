@@ -24,6 +24,10 @@ ZoomIndicatorOverlay::ZoomIndicatorOverlay(FloatingWidgetContainer *parent) : Ov
         setContainerSize(parent->size());
 }
 
+ZoomIndicatorOverlay::~ZoomIndicatorOverlay() {
+    delete fm;
+}
+
 void ZoomIndicatorOverlay::setScale(qreal scale) {
     label.setText(QString::number(qRound(scale * 100.0))+"%");
     label.setFixedSize(fm->horizontalAdvance(label.text()) + 14, fm->height() + 12);

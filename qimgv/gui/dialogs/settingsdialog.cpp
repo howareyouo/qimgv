@@ -598,7 +598,7 @@ void SettingsDialog::addShortcut() {
 }
 //------------------------------------------------------------------------------
 void SettingsDialog::removeShortcutAt(int row) {
-    if(row > 0 && row >= ui->shortcutsTableWidget->rowCount())
+    if(row < 0 || row >= ui->shortcutsTableWidget->rowCount())
         return;
     ui->shortcutsTableWidget->removeRow(row);
 }

@@ -160,10 +160,6 @@ void FolderGridView::selectBelow() {
 void FolderGridView::selectNext() {
     if(!thumbnails.count() || lastSelected() == thumbnails.count() - 1)
         return;
-    if(!rangeSelection && lastSelected() == thumbnails.count() - 1) {
-        select(lastSelected());
-        return;
-    }
     shiftedCol = -1;
     int newIndex = lastSelected() + 1;
     if(!checkRange(newIndex))

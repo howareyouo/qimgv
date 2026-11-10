@@ -18,5 +18,5 @@ private:
     std::shared_ptr<QImage> mImage;
     std::shared_ptr<QPixmap> mPixmap;
     int mSize;
-    bool mHasAlphaChannel;
+    bool mHasAlphaChannel = false;
 };

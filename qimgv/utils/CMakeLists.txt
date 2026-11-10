@@ -8,8 +8,6 @@ target_sources(qimgv PRIVATE
     inputmap.cpp
     randomizer.cpp
     script.cpp
-    sleep.cpp
     stuff.cpp
-    wallpapersetter.cpp
     fileoperations.cpp
 )

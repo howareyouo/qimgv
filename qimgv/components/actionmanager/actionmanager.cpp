@@ -5,10 +5,6 @@ ActionManager *actionManager = nullptr;
 ActionManager::ActionManager(QObject *parent) : QObject(parent) {
 }
 //------------------------------------------------------------------------------
-ActionManager::~ActionManager() {
-    delete actionManager;
-}
-//------------------------------------------------------------------------------
 ActionManager *ActionManager::getInstance() {
     if(!actionManager) {
         actionManager = new ActionManager();

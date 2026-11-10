@@ -90,7 +90,7 @@ private:
     QTimer windowGeometryChangeTimer;
     int currentDisplay;
 
-    bool showInfoBarFullscreen, showInfoBarWindowed, maximized;
+    bool showInfoBarFullscreen = false, showInfoBarWindowed = false, maximized;
     std::shared_ptr<DocumentWidget> docWidget;
     std::shared_ptr<FolderViewProxy> folderView;
     std::shared_ptr<CentralWidget> centralWidget;
@@ -99,7 +99,7 @@ private:
     CropPanel *cropPanel;
     CropOverlay *cropOverlay;
     SaveConfirmOverlay *saveOverlay;
-    ChangelogWindow *changelogWindow;
+    ChangelogWindow *changelogWindow = nullptr;
 
     CopyOverlay *copyOverlay;
 

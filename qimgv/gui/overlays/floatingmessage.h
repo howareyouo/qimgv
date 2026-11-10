@@ -34,7 +34,7 @@ public slots:
 private:
     QTimer visibilityTimer;
     int hideDelay;
-    FloatingWidgetPosition preferredPosition;
+    FloatingWidgetPosition preferredPosition = FloatingWidgetPosition::BOTTOM;
     Ui::FloatingMessage *ui;
     void doShowMessage(QString text, FloatingMessageIcon icon, int duration);
     void setIcon(FloatingMessageIcon icon);

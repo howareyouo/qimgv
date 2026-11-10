@@ -54,5 +54,5 @@ private slots:
 
 protected:
     virtual void recalculateGeometry();
-    FloatingWidgetPosition position;
+    FloatingWidgetPosition position = FloatingWidgetPosition::CENTER;
 };

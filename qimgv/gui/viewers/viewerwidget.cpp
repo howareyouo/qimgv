@@ -312,7 +312,7 @@ void ViewerWidget::hideCursor() {
             QPoint posMapped = mapFromGlobal(QCursor::pos());
             // ignore when we are hovering the click zone
             if(clickZoneOverlay->leftZone().contains(posMapped) ||
-                clickZoneOverlay->leftZone().contains(posMapped))
+                clickZoneOverlay->rightZone().contains(posMapped))
             {
                 return;
             }

@@ -18,6 +18,11 @@ ClickZoneOverlay::ClickZoneOverlay(FloatingWidgetContainer *parent) :
     this->show();
 }
 
+ClickZoneOverlay::~ClickZoneOverlay() {
+    delete pixmapLeft;
+    delete pixmapRight;
+}
+
 void ClickZoneOverlay::readSettings() {
     if(settings->clickableEdgesVisible() == drawZones)
         return;

@@ -23,5 +23,7 @@ public slots:
 private:
     std::shared_ptr<DocumentWidget> documentView;
     std::shared_ptr<FolderViewProxy> folderView;
-    ViewMode mode;
+    // The constructor calls showDocumentView() to run its setup, so the initial
+    // value must not be MODE_DOCUMENT or that call would be a no-op.
+    ViewMode mode = MODE_FOLDERVIEW;
 };
